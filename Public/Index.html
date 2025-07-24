@@ -1,0 +1,60 @@
+<!-- public/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Video Call</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>WebRTC Video Call</h1>
+
+        <div id="username-container">
+            <input type="text" id="username-input" placeholder="Enter your username">
+            <button id="join-btn">Join</button>
+        </div>
+
+        <div id="main-content" style="display: none;">
+            <div id="user-info">
+                <p>Your Username: <span id="local-username"></span></p>
+            </div>
+
+            <div id="users-list">
+                <h2>Online Users</h2>
+                <ul id="online-users"></ul>
+            </div>
+
+            <div id="video-container">
+                <div class="video-wrapper">
+                    <video id="local-video" autoplay muted></video>
+                    <p>Local</p>
+                </div>
+                <div class="video-wrapper">
+                    <video id="remote-video" autoplay></video>
+                    <p>Remote</p>
+                </div>
+            </div>
+
+            <div id="call-controls" style="display: none;">
+                <button id="mute-mic-btn">Mute Mic</button>
+                <button id="stop-video-btn">Stop Video</button>
+                <button id="hang-up-btn">Hang Up</button>
+            </div>
+        </div>
+
+        <div id="incoming-call-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <p id="incoming-call-from"></p>
+                <button id="accept-call-btn">Accept</button>
+                <button id="reject-call-btn">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
