@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,8 +15,54 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from the 'public' directory
+// Middleware
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+// Proxy endpoint to fetch any website
+app.get('/proxy', async (req, res) => {
+    try {
+        const targetUrl = req.query.url;
+        if (!targetUrl) {
+            return res.status(400).json({ error: 'URL parameter is required' });
+        }
+
+        // Fetch the website content
+        const response = await axios.get(targetUrl, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            },
+            timeout: 10000,
+            maxRedirects: 5
+        });
+
+        let html = response.data;
+        
+        // Fix relative URLs to absolute URLs
+        const baseUrl = new URL(targetUrl).origin;
+        html = html.replace(/href="\//g, `href="${baseUrl}/`);
+        html = html.replace(/src="\//g, `src="${baseUrl}/`);
+        html = html.replace(/action="\//g, `action="${baseUrl}/`);
+        
+        // Add base tag to handle remaining relative URLs
+        html = html.replace('<head>', `<head><base href="${targetUrl}">`);
+        
+        res.setHeader('Content-Type', 'text/html');
+        res.send(html);
+        
+    } catch (error) {
+        console.error('Proxy error:', error.message);
+        res.status(500).json({ 
+            error: 'Failed to fetch website', 
+            details: error.message 
+        });
+    }
+});
 
 let users = {};
 

@@ -38,6 +38,67 @@ joinBtn.addEventListener('click', joinChat);
 muteMicBtn.addEventListener('click', toggleMic);
 stopVideoBtn.addEventListener('click', toggleVideo);
 hangUpBtn.addEventListener('click', hangUp);
+// Browser Tools Logic
+// Notification
+const notifyBtn = document.getElementById('notify-btn');
+notifyBtn.addEventListener('click', () => {
+    if (Notification.permission === 'granted') {
+        new Notification('WowPages Notification', { body: 'This is a custom notification!' });
+    } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                new Notification('WowPages Notification', { body: 'This is a custom notification!' });
+            }
+        });
+    }
+});
+
+// Screenshot Preview
+const screenshotDrop = document.getElementById('screenshot-drop');
+const screenshotPreview = document.getElementById('screenshot-preview');
+screenshotDrop.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    screenshotDrop.classList.add('dragover');
+});
+screenshotDrop.addEventListener('dragleave', () => {
+    screenshotDrop.classList.remove('dragover');
+});
+screenshotDrop.addEventListener('drop', (e) => {
+    e.preventDefault();
+    screenshotDrop.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            screenshotPreview.src = evt.target.result;
+            screenshotPreview.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+
+// Copy Text
+const copyBtn = document.getElementById('copy-btn');
+const copyTextArea = document.getElementById('copy-text-area');
+copyBtn.addEventListener('click', () => {
+    copyTextArea.select();
+    document.execCommand('copy');
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => copyBtn.textContent = 'Copy Text', 1200);
+});
+
+// Mousepad
+const mousepad = document.getElementById('mousepad');
+mousepad.addEventListener('click', () => {
+    mousepad.textContent = 'Mousepad Clicked!';
+    setTimeout(() => mousepad.textContent = 'Click or use keyboard (A, S, D, F)', 1000);
+});
+document.addEventListener('keydown', (e) => {
+    if (['a','s','d','f'].includes(e.key.toLowerCase())) {
+        mousepad.textContent = `Key '${e.key.toUpperCase()}' triggered Mousepad!`;
+        setTimeout(() => mousepad.textContent = 'Click or use keyboard (A, S, D, F)', 1000);
+    }
+});
 acceptCallBtn.addEventListener('click', acceptCall);
 rejectCallBtn.addEventListener('click', rejectCall);
 

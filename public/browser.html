@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WowPages Browser</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+        
+        // Chrome-like Browser Component
+        function BrowserChrome({ onTools }) {
+            const [url, setUrl] = useState('');
+            const [currentUrl, setCurrentUrl] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(false);
+            const [searchResults, setSearchResults] = useState([]);
+            
+            const handleSearch = (e) => {
+                if (e.key === 'Enter' || e.type === 'click') {
+                    let searchUrl = url.trim();
+                    setError(false);
+                    
+                    // Check if it's a valid URL
+                    if (!searchUrl.startsWith('http://') && !searchUrl.startsWith('https://')) {
+                        // Check if it looks like a domain (contains a dot)
+                        if (searchUrl.includes('.') && !searchUrl.includes(' ')) {
+                            searchUrl = 'https://' + searchUrl;
+                        } else {
+                            // It's a search query, show search results
+                            performSearch(searchUrl);
+                            return;
+                        }
+                    }
+                    
+                    // List of iframe-friendly sites that typically work
+                    const iframeFriendly = [
+                        'example.com',
+                        'httpbin.org',
+                        'jsonplaceholder.typicode.com',
+                        'via.placeholder.com',
+                        'reqres.in',
+                        'postman-echo.com'
+                    ];
+                    
+                    const isIframeFriendly = iframeFriendly.some(domain => searchUrl.includes(domain));
+                    
+                    if (isIframeFriendly) {
+                        setCurrentUrl(searchUrl);
+                        setUrl(searchUrl);
+                        setLoading(true);
+                        setSearchResults([]);
+                    } else {
+                        // For other sites, show search results with option to open in new tab
+                        performSearchWithUrl(searchUrl);
+                    }
+                }
+            };
+            
+            const performSearchWithUrl = (targetUrl) => {
+                const urlResults = [
+                    { 
+                        title: `Visit ${targetUrl}`, 
+                        url: targetUrl, 
+                        description: `Open ${targetUrl} in a new tab (this site may not work in iframe)` 
+                    },
+                    { 
+                        title: `Search for "${targetUrl}" on Google`, 
+                        url: `https://www.google.com/search?q=${encodeURIComponent(targetUrl)}`, 
+                        description: `Find information about ${targetUrl} on Google` 
+                    }
+                ];
+                setSearchResults(urlResults);
+                setCurrentUrl('');
+            };
+            
+            const performSearch = (query) => {
+                // Mock search results for demo
+                const mockResults = [
+                    { title: `${query} - Wikipedia`, url: `https://en.wikipedia.org/wiki/${query.replace(' ', '_')}`, description: `Learn about ${query} on Wikipedia` },
+                    { title: `${query} - Google`, url: `https://www.google.com/search?q=${encodeURIComponent(query)}`, description: `Search Google for ${query}` },
+                    { title: `${query} - YouTube`, url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`, description: `Watch videos about ${query}` },
+                    { title: `${query} - GitHub`, url: `https://github.com/search?q=${encodeURIComponent(query)}`, description: `Find ${query} repositories on GitHub` }
+                ];
+                setSearchResults(mockResults);
+                setCurrentUrl('');
+            };
+            
+            const handleIframeLoad = () => {
+                setLoading(false);
+            };
+            
+            const handleIframeError = () => {
+                setLoading(false);
+                setError(true);
+            };
+            
+            const openInNewTab = (url) => {
+                window.open(url, '_blank');
+            };
+            
+            const goBack = () => {
+                document.getElementById('browser-iframe').contentWindow.history.back();
+            };
+            
+            const goForward = () => {
+                document.getElementById('browser-iframe').contentWindow.history.forward();
+            };
+            
+            const refresh = () => {
+                setLoading(true);
+                document.getElementById('browser-iframe').src = currentUrl;
+            };
+            
+            return (
+                <div className="bg-white border border-gray-300 rounded-lg shadow-xl max-w-6xl mx-auto mt-4">
+                    {/* Chrome Window Controls */}
+                    <div className="flex items-center px-4 py-3 bg-gray-100 rounded-t-lg border-b">
+                        <div className="flex space-x-2 mr-4">
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        </div>
+                        
+                        {/* Navigation Controls */}
+                        <div className="flex space-x-2 mr-4">
+                            <button 
+                                onClick={goBack}
+                                className="p-1 rounded hover:bg-gray-200"
+                                title="Back"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <button 
+                                onClick={goForward}
+                                className="p-1 rounded hover:bg-gray-200"
+                                title="Forward"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                            <button 
+                                onClick={refresh}
+                                className="p-1 rounded hover:bg-gray-200"
+                                title="Refresh"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        {/* Address Bar */}
+                        <div className="flex-1 mx-4">
+                            <div className="flex bg-white border rounded-full px-4 py-2">
+                                <input 
+                                    type="text" 
+                                    value={url}
+                                    onChange={(e) => setUrl(e.target.value)}
+                                    onKeyPress={handleSearch}
+                                    className="flex-1 outline-none text-sm"
+                                    placeholder="Search Google or type a URL"
+                                />
+                                <button 
+                                    onClick={handleSearch}
+                                    className="ml-2 hover:bg-gray-100 rounded p-1"
+                                >
+                                    <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Tools Button */}
+                        <button 
+                            onClick={onTools}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            Tools
+                        </button>
+                    </div>
+                    
+                    {/* Browser Content Area */}
+                    <div className="relative bg-white rounded-b-lg overflow-hidden" style={{ height: '500px' }}>
+                        {loading && (
+                            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                                <div className="flex items-center space-x-2">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                    <span className="text-gray-600">Loading...</span>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Search Results */}
+                        {searchResults.length > 0 && (
+                            <div className="p-6 h-full overflow-y-auto">
+                                <h3 className="text-xl font-semibold mb-4 text-gray-800">Search Results</h3>
+                                <div className="space-y-4">
+                                    {searchResults.map((result, index) => (
+                                        <div key={index} className="border-l-4 border-blue-500 pl-4 hover:bg-gray-50 p-3 rounded cursor-pointer"
+                                             onClick={() => openInNewTab(result.url)}>
+                                            <h4 className="text-blue-600 font-medium hover:underline">{result.title}</h4>
+                                            <p className="text-green-600 text-sm">{result.url}</p>
+                                            <p className="text-gray-600 text-sm mt-1">{result.description}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                                    <p className="text-sm text-yellow-800">
+                                        <strong>Note:</strong> Many websites block iframe embedding for security. 
+                                        Click on results to open them in a new tab, or try these iframe-friendly sites:
+                                    </p>
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button onClick={() => { setUrl('https://example.com'); handleSearch({type: 'click'}); }} 
+                                                className="text-blue-600 hover:underline text-sm">example.com</button>
+                                        <button onClick={() => { setUrl('https://httpbin.org'); handleSearch({type: 'click'}); }} 
+                                                className="text-blue-600 hover:underline text-sm">httpbin.org</button>
+                                        <button onClick={() => { setUrl('https://jsonplaceholder.typicode.com'); handleSearch({type: 'click'}); }} 
+                                                className="text-blue-600 hover:underline text-sm">jsonplaceholder.typicode.com</button>
+                                        <button onClick={() => { setUrl('https://reqres.in'); handleSearch({type: 'click'}); }} 
+                                                className="text-blue-600 hover:underline text-sm">reqres.in</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Error State */}
+                        {error && !searchResults.length && (
+                            <div className="p-6 h-full flex items-center justify-center">
+                                <div className="text-center">
+                                    <svg className="mx-auto h-12 w-12 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.081 16c-.77.833.192 2.5 1.732 2.5z" />
+                                    </svg>
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Website Refused to Connect</h3>
+                                    <p className="text-gray-600 mb-4">This website blocks iframe embedding for security reasons.</p>
+                                    <button 
+                                        onClick={() => openInNewTab(currentUrl)}
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                                    >
+                                        Open in New Tab
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Iframe Content */}
+                        {currentUrl && !searchResults.length && !error && (
+                            <iframe
+                                id="browser-iframe"
+                                src={currentUrl}
+                                className="w-full h-full border-0"
+                                onLoad={handleIframeLoad}
+                                onError={handleIframeError}
+                                sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                                title="Browser Content"
+                            />
+                        )}
+                        
+                        {/* Default Welcome Screen */}
+                        {!currentUrl && !searchResults.length && !loading && (
+                            <div className="p-6 h-full flex items-center justify-center">
+                                <div className="text-center">
+                                    <h2 className="text-2xl font-bold mb-4 text-gray-800">WowPages Browser</h2>
+                                    <p className="text-gray-600 mb-2">Search or enter a URL to get started</p>
+                                    <p className="text-sm text-gray-500">Note: Some sites may block embedding - they'll open in a new tab instead</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        // Copy Text Tool with OCR
+        function CopyTextTool() {
+            const [image, setImage] = useState(null);
+            const [ocrText, setOcrText] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [selection, setSelection] = useState(null);
+            const canvasRef = useRef();
+            const imgRef = useRef();
+            const [isDrawing, setIsDrawing] = useState(false);
+            
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => setImage(event.target.result);
+                    reader.readAsDataURL(file);
+                }
+            };
+            
+            const handleMouseDown = (e) => {
+                if (!image) return;
+                const rect = canvasRef.current.getBoundingClientRect();
+                const startX = e.clientX - rect.left;
+                const startY = e.clientY - rect.top;
+                setSelection({ startX, startY, endX: startX, endY: startY });
+                setIsDrawing(true);
+            };
+            
+            const handleMouseMove = (e) => {
+                if (!isDrawing || !selection) return;
+                const rect = canvasRef.current.getBoundingClientRect();
+                setSelection(prev => ({
+                    ...prev,
+                    endX: e.clientX - rect.left,
+                    endY: e.clientY - rect.top
+                }));
+            };
+            
+            const handleMouseUp = () => {
+                setIsDrawing(false);
+            };
+            
+            const extractText = async () => {
+                if (!image || !selection) return;
+                setLoading(true);
+                
+                try {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = imgRef.current;
+                    
+                    const x = Math.min(selection.startX, selection.endX);
+                    const y = Math.min(selection.startY, selection.endY);
+                    const width = Math.abs(selection.endX - selection.startX);
+                    const height = Math.abs(selection.endY - selection.startY);
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, x, y, width, height, 0, 0, width, height);
+                    
+                    const { data: { text } } = await Tesseract.recognize(canvas.toDataURL(), 'eng');
+                    setOcrText(text.trim());
+                } catch (error) {
+                    console.error('OCR Error:', error);
+                    setOcrText('Error extracting text');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            
+            const copyText = () => {
+                navigator.clipboard.writeText(ocrText);
+                alert('Text copied to clipboard!');
+            };
+            
+            useEffect(() => {
+                if (!selection || !canvasRef.current) return;
+                
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (selection) {
+                    ctx.strokeStyle = '#3B82F6';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(
+                        Math.min(selection.startX, selection.endX),
+                        Math.min(selection.startY, selection.endY),
+                        Math.abs(selection.endX - selection.startX),
+                        Math.abs(selection.endY - selection.startY)
+                    );
+                }
+            }, [selection]);
+            
+            return (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Copy Text from Screenshot</h3>
+                    
+                    <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                    
+                    {image && (
+                        <div className="relative inline-block">
+                            <img 
+                                ref={imgRef}
+                                src={image} 
+                                alt="Screenshot" 
+                                className="max-w-full max-h-64 rounded-lg shadow-md"
+                                style={{ userSelect: 'none' }}
+                            />
+                            <canvas
+                                ref={canvasRef}
+                                width={imgRef.current?.naturalWidth || 400}
+                                height={imgRef.current?.naturalHeight || 300}
+                                className="absolute top-0 left-0 w-full h-full cursor-crosshair"
+                                onMouseDown={handleMouseDown}
+                                onMouseMove={handleMouseMove}
+                                onMouseUp={handleMouseUp}
+                            />
+                        </div>
+                    )}
+                    
+                    {selection && (
+                        <button 
+                            onClick={extractText}
+                            disabled={loading}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                        >
+                            {loading ? 'Extracting Text...' : 'Extract Text'}
+                        </button>
+                    )}
+                    
+                    {ocrText && (
+                        <div className="space-y-2">
+                            <textarea 
+                                value={ocrText}
+                                readOnly
+                                rows={4}
+                                className="w-full p-3 border rounded-lg bg-gray-50"
+                            />
+                            <button 
+                                onClick={copyText}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                                Copy Text
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        // Tools Sidebar
+        function ToolsSidebar({ open, onClose }) {
+            const [activeTab, setActiveTab] = useState('copy');
+            
+            const showNotification = () => {
+                if (Notification.permission === 'granted') {
+                    new Notification('WowPages', { body: 'Custom notification from your browser tools!' });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            new Notification('WowPages', { body: 'Custom notification from your browser tools!' });
+                        }
+                    });
+                }
+            };
+            
+            return (
+                <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}>
+                    <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+                        <h2 className="text-xl font-bold text-gray-800">Browser Tools</h2>
+                        <button 
+                            onClick={onClose}
+                            className="text-gray-500 hover:text-gray-800 text-xl"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    
+                    <div className="flex border-b">
+                        <button 
+                            className={`px-4 py-2 ${activeTab === 'copy' ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}
+                            onClick={() => setActiveTab('copy')}
+                        >
+                            Copy Text
+                        </button>
+                        <button 
+                            className={`px-4 py-2 ${activeTab === 'notify' ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-700' : 'text-gray-600'}`}
+                            onClick={() => setActiveTab('notify')}
+                        >
+                            Notifications
+                        </button>
+                    </div>
+                    
+                    <div className="p-4 overflow-y-auto h-full">
+                        {activeTab === 'copy' && <CopyTextTool />}
+                        {activeTab === 'notify' && (
+                            <div className="space-y-4">
+                                <h3 className="text-lg font-semibold">Custom Notifications</h3>
+                                <button 
+                                    onClick={showNotification}
+                                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                                >
+                                    Show Notification
+                                </button>
+                                <p className="text-sm text-gray-600">Click to show a custom browser notification</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        
+        // Main App Component
+        function App() {
+            const [toolsOpen, setToolsOpen] = useState(false);
+            
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+                    <BrowserChrome onTools={() => setToolsOpen(!toolsOpen)} />
+                    <ToolsSidebar open={toolsOpen} onClose={() => setToolsOpen(false)} />
+                </div>
+            );
+        }
+        
+        // Render the app using React 18 createRoot API
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

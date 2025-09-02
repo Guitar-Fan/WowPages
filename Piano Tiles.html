@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Tiles - MIDI Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.js"></script>
+    <style>
+        .tile {
+            transition: transform 0.1s ease;
+        }
+        .tile:hover {
+            transform: scale(1.05);
+        }
+        .tile-falling {
+            animation: fallDown linear;
+        }
+        @keyframes fallDown {
+            from { transform: translateY(-100px); }
+            to { transform: translateY(600px); }
+        }
+        .lane {
+            background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 100%);
+        }
+        .hit-area {
+            background: linear-gradient(90deg, #3B82F6, #1E40AF);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-4">🎹 Piano Tiles - MIDI Edition</h1>
+            <p class="text-blue-200">Upload a MIDI file and tap the tiles to the rhythm!</p>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- MIDI Upload -->
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">📁 Load MIDI File</h3>
+                    <input type="file" id="midiUpload" accept=".mid,.midi" 
+                           class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                    <div id="midiInfo" class="text-sm text-blue-200"></div>
+                </div>
+
+                <!-- Media Player -->
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">🎵 Player Controls</h3>
+                    <div class="flex space-x-2">
+                        <button id="playBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            ▶️ Play
+                        </button>
+                        <button id="pauseBtn" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+                            ⏸️ Pause
+                        </button>
+                        <button id="stopBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm text-blue-200">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">0:00</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Stats -->
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">📊 Game Stats</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-2xl font-bold text-green-400" id="score">0</div>
+                            <div class="text-xs text-blue-200">Score</div>
+                        </div>
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-2xl font-bold text-red-400" id="missed">0</div>
+                            <div class="text-xs text-blue-200">Missed</div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-yellow-400" id="accuracy">100%</div>
+                        <div class="text-xs text-blue-200">Accuracy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board -->
+        <div class="bg-black/30 rounded-xl p-4 mb-4">
+            <div id="gameBoard" class="relative mx-auto" style="width: 400px; height: 600px; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);">
+                <!-- Lanes -->
+                <div class="absolute inset-0 flex">
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="0">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="1">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="2">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 relative" data-lane="3">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="text-center text-blue-200 text-sm">
+            <p>🎵 Upload a MIDI file, press play, and tap the falling tiles when they reach the bottom!</p>
+            <p>Use your mouse or keyboard (A, S, D, F keys) to hit the tiles.</p>
+        </div>
+    </div>
+
+    <script>
+        class PianoTilesGame {
+            constructor() {
+                this.lanes = 4;
+                this.tiles = [];
+                this.score = 0;
+                this.missed = 0;
+                this.isPlaying = false;
+                this.midiData = null;
+                this.currentTime = 0;
+                this.totalTime = 0;
+                this.synth = null;
+                this.scheduledNotes = [];
+                this.gameLoop = null;
+                this.fallSpeed = 3; // pixels per frame
+                this.keyboardKeys = ['a', 's', 'd', 'f'];
+                
+                this.initAudio();
+                this.setupEventListeners();
+                this.startGameLoop();
+            }
+
+            async initAudio() {
+                await Tone.start();
+                this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                this.synth.volume.value = -10;
+            }
+
+            setupEventListeners() {
+                // MIDI file upload
+                document.getElementById('midiUpload').addEventListener('change', (e) => this.loadMIDI(e));
+                
+                // Player controls
+                document.getElementById('playBtn').addEventListener('click', () => this.play());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+                document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                
+                // Lane clicking
+                document.querySelectorAll('.lane').forEach((lane, index) => {
+                    lane.addEventListener('click', () => this.hitLane(index));
+                });
+                
+                // Keyboard controls
+                document.addEventListener('keydown', (e) => {
+                    const key = e.key.toLowerCase();
+                    const laneIndex = this.keyboardKeys.indexOf(key);
+                    if (laneIndex !== -1) {
+                        this.hitLane(laneIndex);
+                    }
+                });
+            }
+
+            async loadMIDI(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    this.midiData = new Midi(arrayBuffer);
+                    
+                    this.totalTime = this.midiData.duration;
+                    this.updateUI();
+                    
+                    // Process MIDI notes for tile generation
+                    this.processNotes();
+                    
+                    document.getElementById('midiInfo').innerHTML = `
+                        <div class="text-green-300">✅ Loaded: ${file.name}</div>
+                        <div>Duration: ${this.formatTime(this.totalTime)}</div>
+                        <div>Tracks: ${this.midiData.tracks.length}</div>
+                    `;
+                } catch (error) {
+                    console.error('Error loading MIDI:', error);
+                    document.getElementById('midiInfo').innerHTML = `
+                        <div class="text-red-300">❌ Error loading MIDI file</div>
+                    `;
+                }
+            }
+
+            processNotes() {
+                this.scheduledNotes = [];
+                
+                this.midiData.tracks.forEach(track => {
+                    track.notes.forEach(note => {
+                        this.scheduledNotes.push({
+                            time: note.time,
+                            note: note.name,
+                            velocity: note.velocity,
+                            duration: note.duration,
+                            lane: Math.floor(Math.random() * this.lanes) // Random lane assignment
+                        });
+                    });
+                });
+                
+                // Sort notes by time
+                this.scheduledNotes.sort((a, b) => a.time - b.time);
+            }
+
+            play() {
+                if (!this.midiData) {
+                    alert('Please load a MIDI file first!');
+                    return;
+                }
+                
+                this.isPlaying = true;
+                Tone.Transport.start();
+                this.scheduleNotes();
+                this.updateUI();
+            }
+
+            pause() {
+                this.isPlaying = false;
+                Tone.Transport.pause();
+                this.updateUI();
+            }
+
+            stop() {
+                this.isPlaying = false;
+                this.currentTime = 0;
+                Tone.Transport.stop();
+                Tone.Transport.position = 0;
+                
+                // Clear all tiles
+                this.tiles = [];
+                document.querySelectorAll('.tile').forEach(tile => tile.remove());
+                
+                this.updateUI();
+            }
+
+            scheduleNotes() {
+                // Clear previous scheduled events
+                Tone.Transport.cancel();
+                
+                this.scheduledNotes.forEach(noteData => {
+                    Tone.Transport.schedule((time) => {
+                        // Play the note
+                        this.synth.triggerAttackRelease(noteData.note, noteData.duration, time, noteData.velocity);
+                        
+                        // Generate a tile
+                        this.generateTile(noteData.lane);
+                    }, noteData.time);
+                });
+            }
+
+            generateTile(lane) {
+                const gameBoard = document.getElementById('gameBoard');
+                const laneWidth = gameBoard.offsetWidth / this.lanes;
+                
+                const tile = document.createElement('div');
+                tile.className = 'tile absolute bg-gradient-to-b from-purple-500 to-pink-600 rounded-lg border-2 border-white/30 shadow-lg cursor-pointer';
+                tile.style.width = (laneWidth - 10) + 'px';
+                tile.style.height = '60px';
+                tile.style.left = (lane * laneWidth + 5) + 'px';
+                tile.style.top = '-70px';
+                tile.style.zIndex = '10';
+                
+                // Add visual effects
+                tile.innerHTML = '<div class="w-full h-full bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>';
+                
+                const tileData = {
+                    element: tile,
+                    lane: lane,
+                    y: -70,
+                    hit: false
+                };
+                
+                this.tiles.push(tileData);
+                gameBoard.appendChild(tile);
+                
+                // Click handler for this tile
+                tile.addEventListener('click', () => this.hitTile(tileData));
+            }
+
+            hitLane(laneIndex) {
+                // Find the bottommost tile in this lane
+                const laneTiles = this.tiles.filter(tile => 
+                    tile.lane === laneIndex && 
+                    !tile.hit && 
+                    tile.y > 480 && tile.y < 600 // Near the hit area
+                );
+                
+                if (laneTiles.length > 0) {
+                    // Hit the bottommost tile
+                    const tile = laneTiles.reduce((bottom, current) => 
+                        current.y > bottom.y ? current : bottom
+                    );
+                    this.hitTile(tile);
+                } else {
+                    // Visual feedback for missed tap
+                    this.showMissEffect(laneIndex);
+                }
+            }
+
+            hitTile(tileData) {
+                if (tileData.hit) return;
+                
+                tileData.hit = true;
+                this.score += 10;
+                
+                // Visual hit effect
+                tileData.element.style.backgroundColor = '#10B981';
+                tileData.element.style.transform = 'scale(0.8)';
+                
+                setTimeout(() => {
+                    if (tileData.element.parentNode) {
+                        tileData.element.remove();
+                    }
+                    this.tiles = this.tiles.filter(t => t !== tileData);
+                }, 200);
+                
+                this.updateUI();
+            }
+
+            showMissEffect(lane) {
+                const gameBoard = document.getElementById('gameBoard');
+                const laneWidth = gameBoard.offsetWidth / this.lanes;
+                
+                const effect = document.createElement('div');
+                effect.className = 'absolute bg-red-500/50 rounded-lg pointer-events-none';
+                effect.style.width = (laneWidth - 10) + 'px';
+                effect.style.height = '60px';
+                effect.style.left = (lane * laneWidth + 5) + 'px';
+                effect.style.bottom = '0px';
+                effect.style.animation = 'ping 0.5s ease-out';
+                
+                gameBoard.appendChild(effect);
+                setTimeout(() => effect.remove(), 500);
+            }
+
+            startGameLoop() {
+                this.gameLoop = setInterval(() => {
+                    if (this.isPlaying) {
+                        this.currentTime = Tone.Transport.seconds;
+                        this.updateProgress();
+                    }
+                    
+                    this.updateTiles();
+                    this.checkMissedTiles();
+                }, 16); // ~60 FPS
+            }
+
+            updateTiles() {
+                this.tiles.forEach(tile => {
+                    if (!tile.hit) {
+                        tile.y += this.fallSpeed;
+                        tile.element.style.top = tile.y + 'px';
+                    }
+                });
+            }
+
+            checkMissedTiles() {
+                const missedTiles = this.tiles.filter(tile => 
+                    !tile.hit && tile.y > 600
+                );
+                
+                missedTiles.forEach(tile => {
+                    this.missed++;
+                    tile.element.remove();
+                    this.tiles = this.tiles.filter(t => t !== tile);
+                });
+                
+                if (missedTiles.length > 0) {
+                    this.updateUI();
+                }
+            }
+
+            updateProgress() {
+                if (this.totalTime > 0) {
+                    const progress = (this.currentTime / this.totalTime) * 100;
+                    document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
+                    document.getElementById('currentTime').textContent = this.formatTime(this.currentTime);
+                    
+                    if (this.currentTime >= this.totalTime) {
+                        this.stop();
+                    }
+                }
+            }
+
+            updateUI() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('missed').textContent = this.missed;
+                
+                const total = this.score + this.missed;
+                const accuracy = total > 0 ? Math.round((this.score / (this.score + this.missed)) * 100) : 100;
+                document.getElementById('accuracy').textContent = accuracy + '%';
+                
+                document.getElementById('totalTime').textContent = this.formatTime(this.totalTime);
+                document.getElementById('currentTime').textContent = this.formatTime(this.currentTime);
+                
+                // Update button states
+                document.getElementById('playBtn').disabled = this.isPlaying;
+                document.getElementById('pauseBtn').disabled = !this.isPlaying;
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+
+        // Initialize the game when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PianoTilesGame();
+        });
+    </script>
+</body>
+</html>
