@@ -63,13 +63,26 @@
                             ⏹️ Stop
                         </button>
                     </div>
-                    <div class="space-y-2">
+                    <div class="space-y-3">
                         <div class="flex justify-between text-sm text-blue-200">
                             <span id="currentTime">0:00</span>
                             <span id="totalTime">0:00</span>
                         </div>
                         <div class="w-full bg-gray-700 rounded-full h-2">
                             <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                        <!-- Playback Speed Control -->
+                        <div class="space-y-2">
+                            <label class="text-sm text-blue-200">Speed: <span id="speedDisplay">1.0x</span></label>
+                            <input type="range" id="speedSlider" min="0.25" max="2.0" step="0.25" value="1.0" 
+                                   class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <!-- Minimum Note Control -->
+                        <div class="space-y-2">
+                            <label class="text-sm text-blue-200">Min Tile Note: <span id="noteDisplay">C4</span></label>
+                            <input type="range" id="noteSlider" min="36" max="84" step="1" value="60" 
+                                   class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
+                            <div class="text-xs text-blue-300">Notes below this pitch play as background only</div>
                         </div>
                     </div>
                 </div>
@@ -93,6 +106,41 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Key Bindings Configuration -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-8">
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">⌨️ Key Bindings</h3>
+                    <p class="text-blue-200 text-sm">Click on a lane button to change its key binding</p>
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <button id="keyBtn0" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors key-binding-btn" data-lane="0">
+                                A
+                            </button>
+                            <div class="text-xs text-blue-200 mt-1">Lane 1</div>
+                        </div>
+                        <div class="text-center">
+                            <button id="keyBtn1" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors key-binding-btn" data-lane="1">
+                                S
+                            </button>
+                            <div class="text-xs text-blue-200 mt-1">Lane 2</div>
+                        </div>
+                        <div class="text-center">
+                            <button id="keyBtn2" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors key-binding-btn" data-lane="2">
+                                D
+                            </button>
+                            <div class="text-xs text-blue-200 mt-1">Lane 3</div>
+                        </div>
+                        <div class="text-center">
+                            <button id="keyBtn3" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors key-binding-btn" data-lane="3">
+                                F
+                            </button>
+                            <div class="text-xs text-blue-200 mt-1">Lane 4</div>
+                        </div>
+                    </div>
+                    <div id="keyBindingStatus" class="text-center text-sm text-blue-300"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Game Board -->
@@ -101,16 +149,24 @@
                 <!-- Lanes -->
                 <div class="absolute inset-0 flex">
                     <div class="lane flex-1 border-r border-white/20 relative" data-lane="0">
-                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-xl" id="laneKey0">A</span>
+                        </div>
                     </div>
                     <div class="lane flex-1 border-r border-white/20 relative" data-lane="1">
-                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-xl" id="laneKey1">S</span>
+                        </div>
                     </div>
                     <div class="lane flex-1 border-r border-white/20 relative" data-lane="2">
-                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-xl" id="laneKey2">D</span>
+                        </div>
                     </div>
                     <div class="lane flex-1 relative" data-lane="3">
-                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-xl" id="laneKey3">F</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -119,7 +175,7 @@
         <!-- Instructions -->
         <div class="text-center text-blue-200 text-sm">
             <p>🎵 Upload a MIDI file, press play, and tap the falling tiles when they reach the bottom!</p>
-            <p>Use your mouse or keyboard (A, S, D, F keys) to hit the tiles.</p>
+            <p>Use your mouse or keyboard to hit the tiles. Click the key binding buttons above to customize your controls!</p>
         </div>
     </div>
 
@@ -128,6 +184,7 @@
             constructor() {
                 this.lanes = 4;
                 this.tiles = [];
+                this.laneQueues = [[], [], [], []]; // Separate queue for each lane to prevent overlap
                 this.score = 0;
                 this.missed = 0;
                 this.isPlaying = false;
@@ -139,9 +196,16 @@
                 this.gameLoop = null;
                 this.fallSpeed = 3; // pixels per frame
                 this.keyboardKeys = ['a', 's', 'd', 'f'];
+                this.playbackSpeed = 1.0;
+                this.minTileNote = 60; // C4 (MIDI note number)
+                this.tileHeight = 60;
+                this.minTileGap = 20; // Minimum gap between tiles in pixels
+                this.waitingForKeyBinding = null; // Track which lane is waiting for key input
                 
                 this.initAudio();
                 this.setupEventListeners();
+                this.setupKeyBindings();
+                this.loadKeyBindings();
                 this.startGameLoop();
             }
 
@@ -149,6 +213,9 @@
                 await Tone.start();
                 this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
                 this.synth.volume.value = -10;
+                
+                // Set initial transport BPM (will be adjusted by speed control)
+                Tone.Transport.bpm.value = 120;
             }
 
             setupEventListeners() {
@@ -160,6 +227,29 @@
                 document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
                 
+                // Speed control
+                document.getElementById('speedSlider').addEventListener('input', (e) => {
+                    this.playbackSpeed = parseFloat(e.target.value);
+                    document.getElementById('speedDisplay').textContent = this.playbackSpeed + 'x';
+                    
+                    // Update transport speed if playing
+                    if (this.isPlaying) {
+                        Tone.Transport.bpm.value = 120 * this.playbackSpeed;
+                    }
+                });
+                
+                // Note threshold control
+                document.getElementById('noteSlider').addEventListener('input', (e) => {
+                    this.minTileNote = parseInt(e.target.value);
+                    const noteName = this.midiNoteToName(this.minTileNote);
+                    document.getElementById('noteDisplay').textContent = noteName;
+                    
+                    // Reprocess notes if MIDI is loaded
+                    if (this.midiData) {
+                        this.processNotes();
+                    }
+                });
+                
                 // Lane clicking
                 document.querySelectorAll('.lane').forEach((lane, index) => {
                     lane.addEventListener('click', () => this.hitLane(index));
@@ -167,12 +257,136 @@
                 
                 // Keyboard controls
                 document.addEventListener('keydown', (e) => {
+                    // Handle key binding setup
+                    if (this.waitingForKeyBinding !== null) {
+                        this.setKeyBinding(this.waitingForKeyBinding, e.key.toLowerCase());
+                        return;
+                    }
+                    
                     const key = e.key.toLowerCase();
                     const laneIndex = this.keyboardKeys.indexOf(key);
                     if (laneIndex !== -1) {
                         this.hitLane(laneIndex);
                     }
                 });
+            }
+
+            setupKeyBindings() {
+                // Setup key binding buttons
+                document.querySelectorAll('.key-binding-btn').forEach((btn, index) => {
+                    btn.addEventListener('click', () => {
+                        this.startKeyBinding(index);
+                    });
+                });
+            }
+
+            startKeyBinding(laneIndex) {
+                this.waitingForKeyBinding = laneIndex;
+                const btn = document.getElementById(`keyBtn${laneIndex}`);
+                btn.textContent = '?';
+                btn.classList.add('bg-yellow-600');
+                btn.classList.remove('bg-blue-600');
+                
+                document.getElementById('keyBindingStatus').textContent = `Press any key for Lane ${laneIndex + 1}...`;
+                
+                // Auto-cancel after 5 seconds
+                setTimeout(() => {
+                    if (this.waitingForKeyBinding === laneIndex) {
+                        this.cancelKeyBinding(laneIndex);
+                    }
+                }, 5000);
+            }
+
+            setKeyBinding(laneIndex, newKey) {
+                // Check if key is already used by another lane
+                const existingLane = this.keyboardKeys.indexOf(newKey);
+                if (existingLane !== -1 && existingLane !== laneIndex) {
+                    document.getElementById('keyBindingStatus').textContent = `Key "${newKey.toUpperCase()}" is already used by Lane ${existingLane + 1}!`;
+                    this.cancelKeyBinding(laneIndex);
+                    return;
+                }
+                
+                // Update the key binding
+                this.keyboardKeys[laneIndex] = newKey;
+                
+                // Update UI
+                const btn = document.getElementById(`keyBtn${laneIndex}`);
+                const laneKey = document.getElementById(`laneKey${laneIndex}`);
+                const keyDisplay = newKey.toUpperCase();
+                
+                btn.textContent = keyDisplay;
+                laneKey.textContent = keyDisplay;
+                
+                btn.classList.remove('bg-yellow-600');
+                btn.classList.add('bg-green-600');
+                
+                document.getElementById('keyBindingStatus').textContent = `Lane ${laneIndex + 1} bound to "${keyDisplay}"`;
+                
+                this.waitingForKeyBinding = null;
+                this.saveKeyBindings(); // Save to localStorage
+                
+                // Reset button color after 2 seconds
+                setTimeout(() => {
+                    btn.classList.remove('bg-green-600');
+                    btn.classList.add('bg-blue-600');
+                    document.getElementById('keyBindingStatus').textContent = '';
+                }, 2000);
+            }
+
+            cancelKeyBinding(laneIndex) {
+                const btn = document.getElementById(`keyBtn${laneIndex}`);
+                btn.textContent = this.keyboardKeys[laneIndex].toUpperCase();
+                btn.classList.remove('bg-yellow-600');
+                btn.classList.add('bg-blue-600');
+                
+                document.getElementById('keyBindingStatus').textContent = '';
+                this.waitingForKeyBinding = null;
+            }
+
+            loadKeyBindings() {
+                const savedBindings = localStorage.getItem('pianoTilesKeyBindings');
+                if (savedBindings) {
+                    try {
+                        const bindings = JSON.parse(savedBindings);
+                        this.keyboardKeys = bindings;
+                        
+                        // Update UI to reflect loaded bindings
+                        this.keyboardKeys.forEach((key, index) => {
+                            const btn = document.getElementById(`keyBtn${index}`);
+                            const laneKey = document.getElementById(`laneKey${index}`);
+                            const keyDisplay = key.toUpperCase();
+                            
+                            btn.textContent = keyDisplay;
+                            laneKey.textContent = keyDisplay;
+                        });
+                    } catch (error) {
+                        console.log('Could not load key bindings from storage');
+                    }
+                }
+            }
+
+            saveKeyBindings() {
+                localStorage.setItem('pianoTilesKeyBindings', JSON.stringify(this.keyboardKeys));
+            }
+
+            midiNoteToName(midiNote) {
+                const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const octave = Math.floor(midiNote / 12) - 1;
+                const noteName = noteNames[midiNote % 12];
+                return noteName + octave;
+            }
+
+            midiNameToNumber(noteName) {
+                const noteMap = {
+                    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5,
+                    'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+                };
+                
+                const match = noteName.match(/([A-G][#b]?)(\d+)/);
+                if (!match) return 60; // Default to C4
+                
+                const [, note, octave] = match;
+                return (parseInt(octave) + 1) * 12 + noteMap[note];
             }
 
             async loadMIDI(event) {
@@ -207,18 +421,37 @@
                 
                 this.midiData.tracks.forEach(track => {
                     track.notes.forEach(note => {
+                        const midiNoteNumber = this.midiNameToNumber(note.name);
+                        const shouldShowTile = midiNoteNumber >= this.minTileNote;
+                        
                         this.scheduledNotes.push({
-                            time: note.time,
+                            time: note.time / this.playbackSpeed, // Adjust time for speed
                             note: note.name,
                             velocity: note.velocity,
-                            duration: note.duration,
-                            lane: Math.floor(Math.random() * this.lanes) // Random lane assignment
+                            duration: note.duration / this.playbackSpeed, // Adjust duration for speed
+                            midiNumber: midiNoteNumber,
+                            showTile: shouldShowTile,
+                            lane: shouldShowTile ? Math.floor(Math.random() * this.lanes) : -1 // No lane for background notes
                         });
                     });
                 });
                 
                 // Sort notes by time
                 this.scheduledNotes.sort((a, b) => a.time - b.time);
+                
+                // Update info display
+                const tileNotes = this.scheduledNotes.filter(note => note.showTile);
+                const backgroundNotes = this.scheduledNotes.filter(note => !note.showTile);
+                
+                if (document.getElementById('midiInfo').innerHTML.includes('✅')) {
+                    const existingInfo = document.getElementById('midiInfo').innerHTML;
+                    document.getElementById('midiInfo').innerHTML = existingInfo + `
+                        <div class="mt-2 text-xs">
+                            <div class="text-green-300">Tile Notes: ${tileNotes.length}</div>
+                            <div class="text-blue-300">Background Notes: ${backgroundNotes.length}</div>
+                        </div>
+                    `;
+                }
             }
 
             play() {
@@ -228,6 +461,10 @@
                 }
                 
                 this.isPlaying = true;
+                
+                // Set transport speed
+                Tone.Transport.bpm.value = 120 * this.playbackSpeed;
+                
                 Tone.Transport.start();
                 this.scheduleNotes();
                 this.updateUI();
@@ -258,35 +495,68 @@
                 
                 this.scheduledNotes.forEach(noteData => {
                     Tone.Transport.schedule((time) => {
-                        // Play the note
-                        this.synth.triggerAttackRelease(noteData.note, noteData.duration, time, noteData.velocity);
-                        
-                        // Generate a tile
-                        this.generateTile(noteData.lane);
+                        // Generate a tile only for notes above threshold
+                        if (noteData.showTile) {
+                            const lane = Math.floor((noteData.midiNumber - this.minTileNote) % this.lanes);
+                            
+                            // Check if we can add a tile to this lane (prevent overlap)
+                            if (this.canAddTileToLane(lane)) {
+                                this.generateTile(lane, noteData.midiNumber);
+                            }
+                        }
                     }, noteData.time);
                 });
             }
 
-            generateTile(lane) {
+            canAddTileToLane(lane) {
+                const laneWidth = document.getElementById('gameBoard').offsetWidth / this.lanes;
+                const laneX = lane * laneWidth;
+                
+                // Check existing tiles in this lane
+                const existingTiles = this.tiles.filter(tile => 
+                    Math.abs(parseFloat(tile.element.style.left) - (laneX + 5)) < 10 && 
+                    tile.y > -this.tileHeight - this.minTileGap &&
+                    tile.y < this.tileHeight + this.minTileGap
+                );
+                
+                return existingTiles.length === 0;
+            }
+
+            generateTile(lane, midiNoteNumber) {
                 const gameBoard = document.getElementById('gameBoard');
                 const laneWidth = gameBoard.offsetWidth / this.lanes;
                 
+                // Color tiles based on note pitch (higher notes = brighter colors)
+                const noteHeight = (midiNoteNumber - this.minTileNote) / 24; // Normalize to 0-1 over 2 octaves
+                const hue = Math.max(0, Math.min(360, 240 + noteHeight * 120)); // Blue to purple/pink spectrum
+                const saturation = 70 + noteHeight * 30; // More saturated for higher notes
+                const lightness = 50 + noteHeight * 20; // Brighter for higher notes
+                
                 const tile = document.createElement('div');
-                tile.className = 'tile absolute bg-gradient-to-b from-purple-500 to-pink-600 rounded-lg border-2 border-white/30 shadow-lg cursor-pointer';
+                tile.className = 'tile absolute rounded-lg border-2 border-white/30 shadow-lg cursor-pointer';
                 tile.style.width = (laneWidth - 10) + 'px';
                 tile.style.height = '60px';
                 tile.style.left = (lane * laneWidth + 5) + 'px';
                 tile.style.top = '-70px';
                 tile.style.zIndex = '10';
+                tile.style.background = `linear-gradient(to bottom, hsl(${hue}, ${saturation}%, ${lightness}%), hsl(${hue}, ${saturation}%, ${lightness - 20}%))`;
                 
-                // Add visual effects
-                tile.innerHTML = '<div class="w-full h-full bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>';
+                // Add note name display
+                const noteName = this.midiNoteToName(midiNoteNumber);
+                tile.innerHTML = `
+                    <div class="w-full h-full bg-gradient-to-b from-white/20 to-transparent rounded-lg flex items-center justify-center">
+                        <span class="text-white text-xs font-bold drop-shadow">${noteName}</span>
+                    </div>
+                `;
                 
                 const tileData = {
                     element: tile,
                     lane: lane,
                     y: -70,
-                    hit: false
+                    hit: false,
+                    midiNote: midiNoteNumber,
+                    velocity: 0.7,
+                    audioPlayed: false
                 };
                 
                 this.tiles.push(tileData);
@@ -365,12 +635,28 @@
             }
 
             updateTiles() {
+                const hitZoneY = 480; // Y position of the hit area
+                const hitZoneTolerance = 20; // Tolerance for hitting
+                
                 this.tiles.forEach(tile => {
                     if (!tile.hit) {
-                        tile.y += this.fallSpeed;
+                        // Adjust fall speed based on playback speed
+                        tile.y += this.fallSpeed * this.playbackSpeed;
                         tile.element.style.top = tile.y + 'px';
+                        
+                        // Check if tile has reached the hit zone and play audio
+                        if (!tile.audioPlayed && tile.y >= hitZoneY - hitZoneTolerance && tile.y <= hitZoneY + hitZoneTolerance) {
+                            this.playNoteAtHitZone(tile);
+                            tile.audioPlayed = true;
+                        }
                     }
                 });
+            }
+            
+            playNoteAtHitZone(tile) {
+                // Play the note when tile reaches hit zone
+                const noteName = this.getMIDINoteNameFromNumber(tile.midiNote);
+                this.synth.triggerAttackRelease(noteName, "8n", "+0", tile.velocity);
             }
 
             checkMissedTiles() {
@@ -391,11 +677,14 @@
 
             updateProgress() {
                 if (this.totalTime > 0) {
-                    const progress = (this.currentTime / this.totalTime) * 100;
+                    // Adjust total time based on playback speed
+                    const adjustedTotalTime = this.totalTime / this.playbackSpeed;
+                    const progress = (this.currentTime / adjustedTotalTime) * 100;
                     document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
                     document.getElementById('currentTime').textContent = this.formatTime(this.currentTime);
+                    document.getElementById('totalTime').textContent = this.formatTime(adjustedTotalTime);
                     
-                    if (this.currentTime >= this.totalTime) {
+                    if (this.currentTime >= adjustedTotalTime) {
                         this.stop();
                     }
                 }
@@ -421,6 +710,13 @@
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            getMIDINoteNameFromNumber(midiNumber) {
+                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                const octave = Math.floor(midiNumber / 12) - 1;
+                const noteIndex = midiNumber % 12;
+                return notes[noteIndex] + octave;
             }
         }
 
