@@ -1,1 +1,1 @@
-# WowPages
+Piano Tiles Game is the main game of this repository. Inspired by Piano Tiles App. Player can upload midi files (preferably not to complicated midi files) and tiles will generate for each midi note triggered. User can adjust speed of gameplay and threshold note (every note below threshold note will not generate a tile). Working on feature to upload custom sample
