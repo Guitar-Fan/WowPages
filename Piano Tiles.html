@@ -7,458 +7,123 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.28/build/Midi.js"></script>
-      <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-  <script>eruda.init();</script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
-        
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Rajdhani', sans-serif;
-            overflow-x: hidden;
-        }
-        
-        /* Animated background */
-        .game-bg {
-            background: linear-gradient(-45deg, #0f0f23, #1a1a3e, #2d1b69, #6b21a8);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-        }
-        
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        /* Neon glow effects */
-        .neon-border {
-            border: 2px solid #00ffff;
-            box-shadow: 
-                0 0 5px #00ffff,
-                0 0 10px #00ffff,
-                0 0 15px #00ffff,
-                inset 0 0 5px rgba(0, 255, 255, 0.1);
-        }
-        
-        .neon-glow {
-            text-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff, 0 0 30px #00ffff;
-        }
-        
-        /* Enhanced tile styling */
         .tile {
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 2px 8px rgba(255, 255, 255, 0.2),
-                0 0 20px rgba(99, 102, 241, 0.4);
-            backdrop-filter: blur(8px);
-            position: relative;
-            overflow: hidden;
+            transition: transform 0.1s ease;
         }
-        
-        .tile::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transform: rotate(45deg);
-            transition: all 0.5s;
-            opacity: 0;
-        }
-        
-        .tile:hover::before {
-            opacity: 1;
-            animation: shimmer 0.6s ease-in-out;
-        }
-        
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
         .tile:hover {
-            transform: scale(1.08) translateY(-2px);
-            box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.4),
-                inset 0 2px 8px rgba(255, 255, 255, 0.3),
-                0 0 30px rgba(99, 102, 241, 0.6);
+            transform: scale(1.05);
         }
-        
-        .tile-hit {
-            animation: tileHitEffect 0.3s ease-out;
+        .tile-falling {
+            animation: fallDown linear;
         }
-        
-        @keyframes tileHitEffect {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); filter: brightness(1.5); }
-            100% { transform: scale(0.8); opacity: 0; }
+        @keyframes fallDown {
+            from { transform: translateY(-100px); }
+            to { transform: translateY(600px); }
         }
-        
-        /* Enhanced lane styling */
         .lane {
-            background: linear-gradient(180deg, 
-                rgba(15, 23, 42, 0.3) 0%, 
-                rgba(30, 41, 59, 0.2) 50%, 
-                rgba(15, 23, 42, 0.4) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.1);
-            position: relative;
-            overflow: hidden;
+            background: linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.05) 100%);
         }
-        
-        .lane::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 100%;
-            background: linear-gradient(180deg, 
-                transparent 0%, 
-                rgba(0, 255, 255, 0.3) 20%, 
-                rgba(0, 255, 255, 0.6) 50%, 
-                rgba(0, 255, 255, 0.3) 80%, 
-                transparent 100%);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
-        }
-        
-        /* Hit area with advanced effects */
         .hit-area {
-            background: linear-gradient(135deg, 
-                #667eea 0%, 
-                #764ba2 25%, 
-                #f093fb 50%, 
-                #f5576c 75%, 
-                #4facfe 100%);
-            background-size: 300% 300%;
-            animation: gradientWave 3s ease infinite;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 
-                0 0 20px rgba(103, 232, 249, 0.5),
-                inset 0 2px 10px rgba(255, 255, 255, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        @keyframes gradientWave {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        
-        .hit-area::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            animation: sweepGlow 2s ease-in-out infinite;
-        }
-        
-        @keyframes sweepGlow {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        
-        /* Game board enhancements */
-        .game-board {
-            background: linear-gradient(180deg, 
-                rgba(0, 0, 0, 0.9) 0%, 
-                rgba(15, 23, 42, 0.8) 30%, 
-                rgba(30, 41, 59, 0.6) 70%, 
-                rgba(0, 0, 0, 0.9) 100%);
-            border: 3px solid rgba(0, 255, 255, 0.3);
-            box-shadow: 
-                0 0 50px rgba(0, 255, 255, 0.2),
-                inset 0 0 50px rgba(15, 23, 42, 0.5);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .game-board::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: 
-                radial-gradient(circle at 25% 25%, rgba(0, 255, 255, 0.1) 0%, transparent 25%),
-                radial-gradient(circle at 75% 75%, rgba(147, 51, 234, 0.1) 0%, transparent 25%);
-            animation: patternFloat 8s ease-in-out infinite;
-        }
-        
-        @keyframes patternFloat {
-            0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(10px, -10px); }
-        }
-        
-        /* Enhanced UI elements */
-        .control-panel {
-            background: linear-gradient(135deg, 
-                rgba(15, 23, 42, 0.9) 0%, 
-                rgba(30, 41, 59, 0.8) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            box-shadow: 
-                0 25px 50px rgba(0, 0, 0, 0.25),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-        }
-        
-        .game-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 
-                0 8px 32px rgba(102, 126, 234, 0.3),
-                inset 0 2px 8px rgba(255, 255, 255, 0.2);
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .game-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 40px rgba(102, 126, 234, 0.4),
-                inset 0 2px 8px rgba(255, 255, 255, 0.3);
-        }
-        
-        .game-button:active {
-            transform: translateY(0);
-        }
-        
-        /* Stats display */
-        .stat-card {
-            background: linear-gradient(135deg, 
-                rgba(0, 0, 0, 0.4) 0%, 
-                rgba(15, 23, 42, 0.6) 100%);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-        
-        /* Progress bar */
-        .progress-container {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            background: linear-gradient(90deg, #00ffff 0%, #0080ff 50%, #8000ff 100%);
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
-            transition: all 0.3s ease;
-        }
-        
-        /* Typography */
-        .title-text {
-            font-family: 'Orbitron', monospace;
-            font-weight: 900;
-            background: linear-gradient(135deg, #00ffff 0%, #ff00ff 50%, #ffff00 100%);
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
-        }
-        
-        /* Particle effects */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-        
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: #00ffff;
-            border-radius: 50%;
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+            background: linear-gradient(90deg, #3B82F6, #1E40AF);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
         }
     </style>
 </head>
-<body class="game-bg min-h-screen relative">
-    <!-- Floating particles background -->
-    <div class="particles" id="particles"></div>
-    
-    <div class="container mx-auto px-4 py-8 relative z-10">
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
         <!-- Header -->
-        <div class="text-center mb-4">
-            <h1 class="text-4xl font-bold title-text mb-2 neon-glow">🎹 PIANO TILES</h1>
-            <p class="text-sm text-cyan-300 font-light tracking-wider">MIDI EDITION</p>
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white mb-4">🎹 Piano Tiles - MIDI Edition</h1>
+            <p class="text-blue-200">Upload a MIDI file and tap the tiles to the rhythm!</p>
         </div>
 
-        <!-- Compact Controls Panel -->
-        <div class="control-panel rounded-xl p-4 mb-4 neon-border">
-            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 text-sm">
+        <!-- Controls Panel -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- MIDI Upload -->
-                <div class="space-y-2">
-                    <h3 class="text-cyan-300 font-bold text-sm">📁 MIDI FILE</h3>
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">📁 Load MIDI File</h3>
                     <input type="file" id="midiUpload" accept=".mid,.midi" 
-                           class="block w-full text-xs text-gray-300 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-cyan-500 file:to-purple-600 file:text-white hover:file:from-cyan-400 hover:file:to-purple-500 file:transition-all file:duration-300">
-                    <div id="midiInfo" class="text-xs text-cyan-200 bg-black/20 rounded p-2 border border-cyan-500/30"></div>
+                           class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                    <div id="midiInfo" class="text-sm text-blue-200"></div>
                 </div>
 
                 <!-- Media Player -->
-                <div class="space-y-2">
-                    <h3 class="text-cyan-300 font-bold text-sm">🎵 CONTROLS</h3>
-                    <div class="flex space-x-1">
-                        <button id="playBtn" class="flex-1 game-button text-white px-2 py-1 rounded text-xs font-bold">
-                            ▶️
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">🎵 Player Controls</h3>
+                    <div class="flex space-x-2">
+                        <button id="playBtn" class="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                            ▶️ Play
                         </button>
-                        <button id="pauseBtn" class="flex-1 game-button text-white px-2 py-1 rounded text-xs font-bold">
-                            ⏸️
+                        <button id="pauseBtn" class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg">
+                            ⏸️ Pause
                         </button>
-                        <button id="stopBtn" class="flex-1 game-button text-white px-2 py-1 rounded text-xs font-bold">
-                            ⏹️
+                        <button id="stopBtn" class="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                            ⏹️ Stop
                         </button>
                     </div>
-                    <!-- Audio Status Indicator -->
-                    <div class="bg-black/30 rounded p-1 border border-cyan-500/30">
-                        <div class="flex items-center space-x-1">
-                            <div id="audioStatus" class="w-2 h-2 rounded-full bg-red-500"></div>
-                            <span id="audioStatusText" class="text-xs text-cyan-300">Audio: Click play</span>
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm text-blue-200">
+                            <span id="currentTime">0:00</span>
+                            <span id="totalTime">0:00</span>
                         </div>
-                    </div>
-                    <div class="flex justify-between text-xs text-cyan-300 font-mono">
-                        <span id="currentTime">0:00</span>
-                        <span id="totalTime">0:00</span>
-                    </div>
-                    <div class="progress-container rounded-full h-2">
-                        <div id="progressBar" class="progress-bar h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                </div>
-                
-                <!-- Speed & Note Controls -->
-                <div class="space-y-2">
-                    <h3 class="text-cyan-300 font-bold text-sm">⚙️ SETTINGS</h3>
-                    <div class="space-y-1">
-                        <label class="text-xs text-cyan-300">SPEED: <span id="speedDisplay" class="text-white">1.0x</span></label>
-                        <input type="range" id="speedSlider" min="0.25" max="2.0" step="0.25" value="1.0" 
-                               class="w-full h-2 bg-black/40 rounded appearance-none cursor-pointer">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-xs text-cyan-300">MIN NOTE: <span id="noteDisplay" class="text-white">C4</span></label>
-                        <input type="range" id="noteSlider" min="36" max="84" step="1" value="60" 
-                               class="w-full h-2 bg-black/40 rounded appearance-none cursor-pointer">
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div id="progressBar" class="bg-blue-600 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Game Stats -->
-                <div class="space-y-2">
-                    <h3 class="text-cyan-300 font-bold text-sm">📊 STATS</h3>
-                    <div class="grid grid-cols-3 gap-2 text-center">
-                        <div class="stat-card rounded p-2">
-                            <div class="text-lg font-bold text-green-400" id="score">0</div>
-                            <div class="text-xs text-cyan-300">SCORE</div>
+                <div class="space-y-4">
+                    <h3 class="text-white font-semibold">📊 Game Stats</h3>
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-2xl font-bold text-green-400" id="score">0</div>
+                            <div class="text-xs text-blue-200">Score</div>
                         </div>
-                        <div class="stat-card rounded p-2">
-                            <div class="text-lg font-bold text-red-400" id="missed">0</div>
-                            <div class="text-xs text-cyan-300">MISSED</div>
-                        </div>
-                        <div class="stat-card rounded p-2">
-                            <div class="text-lg font-bold text-yellow-400" id="accuracy">100%</div>
-                            <div class="text-xs text-cyan-300">ACC</div>
+                        <div class="bg-white/10 rounded-lg p-3">
+                            <div class="text-2xl font-bold text-red-400" id="missed">0</div>
+                            <div class="text-xs text-blue-200">Missed</div>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Compact Key Bindings -->
-            <div class="mt-2">
-                <div class="grid grid-cols-4 gap-2">
-                    <button id="keyBtn0" class="game-button text-white py-2 px-3 rounded text-sm font-bold key-binding-btn" data-lane="0">A</button>
-                    <button id="keyBtn1" class="game-button text-white py-2 px-3 rounded text-sm font-bold key-binding-btn" data-lane="1">S</button>
-                    <button id="keyBtn2" class="game-button text-white py-2 px-3 rounded text-sm font-bold key-binding-btn" data-lane="2">D</button>
-                    <button id="keyBtn3" class="game-button text-white py-2 px-3 rounded text-sm font-bold key-binding-btn" data-lane="3">F</button>
-                </div>
-                <div id="keyBindingStatus" class="text-center text-xs text-cyan-300 mt-1"></div>
-            </div>
-        </div>
-
-        <!-- Enhanced Game Board - Much Larger -->
-        <div class="flex justify-center mb-4">
-            <div class="game-board rounded-3xl p-4" style="width: 800px; height: 900px;">
-                <div id="gameBoard" class="relative w-full h-full rounded-2xl overflow-hidden">
-                    <!-- Lanes -->
-                    <div class="absolute inset-0 flex">
-                        <div class="lane flex-1 border-r border-cyan-500/20 relative" data-lane="0">
-                            <div class="absolute bottom-0 w-full h-24 hit-area rounded-xl flex items-center justify-center m-2">
-                                <span class="text-white font-bold text-3xl neon-glow tracking-wider" id="laneKey0">A</span>
-                            </div>
-                        </div>
-                        <div class="lane flex-1 border-r border-cyan-500/20 relative" data-lane="1">
-                            <div class="absolute bottom-0 w-full h-24 hit-area rounded-xl flex items-center justify-center m-2">
-                                <span class="text-white font-bold text-3xl neon-glow tracking-wider" id="laneKey1">S</span>
-                            </div>
-                        </div>
-                        <div class="lane flex-1 border-r border-cyan-500/20 relative" data-lane="2">
-                            <div class="absolute bottom-0 w-full h-24 hit-area rounded-xl flex items-center justify-center m-2">
-                                <span class="text-white font-bold text-3xl neon-glow tracking-wider" id="laneKey2">D</span>
-                            </div>
-                        </div>
-                        <div class="lane flex-1 relative" data-lane="3">
-                            <div class="absolute bottom-0 w-full h-24 hit-area rounded-xl flex items-center justify-center m-2">
-                                <span class="text-white font-bold text-3xl neon-glow tracking-wider" id="laneKey3">F</span>
-                            </div>
-                        </div>
+                    <div class="text-center">
+                        <div class="text-lg font-semibold text-yellow-400" id="accuracy">100%</div>
+                        <div class="text-xs text-blue-200">Accuracy</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Compact Instructions -->
-        <div class="text-center text-cyan-300 text-sm">
-            <p>🎵 Upload MIDI → Play → Hit tiles with mouse/keyboard!</p>
+        <!-- Game Board -->
+        <div class="bg-black/30 rounded-xl p-4 mb-4">
+            <div id="gameBoard" class="relative mx-auto" style="width: 400px; height: 600px; background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);">
+                <!-- Lanes -->
+                <div class="absolute inset-0 flex">
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="0">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="1">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 border-r border-white/20 relative" data-lane="2">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                    <div class="lane flex-1 relative" data-lane="3">
+                        <div class="absolute bottom-0 w-full h-16 hit-area rounded-lg"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="text-center text-blue-200 text-sm">
+            <p>🎵 Upload a MIDI file, press play, and tap the falling tiles when they reach the bottom!</p>
+            <p>Use your mouse or keyboard (A, S, D, F keys) to hit the tiles.</p>
         </div>
     </div>
 
     <script>
-        // Create floating particles - Reduced for performance
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 25; // Reduced from 50 for better performance
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.animationDelay = Math.random() * 6 + 's';
-                particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-                particlesContainer.appendChild(particle);
-            }
-        }
-        
-        // Initialize particles
-        createParticles();
         class PianoTilesGame {
             constructor() {
                 this.lanes = 4;
@@ -472,45 +137,18 @@
                 this.synth = null;
                 this.scheduledNotes = [];
                 this.gameLoop = null;
-                this.fallSpeed = 8; // Increased fall speed to prevent overlap
+                this.fallSpeed = 3; // pixels per frame
                 this.keyboardKeys = ['a', 's', 'd', 'f'];
-                this.playbackSpeed = 1.0;
-                this.minTileNote = 60; // C4 (MIDI note number)
-                this.waitingForKeyBinding = null; // Track which lane is waiting for key input
-                this.audioInitialized = false; // Track if audio has been initialized
-                this.lastUpdateTime = performance.now(); // For smooth animation timing
                 
+                this.initAudio();
                 this.setupEventListeners();
-                this.setupKeyBindings();
-                this.loadKeyBindings();
                 this.startGameLoop();
             }
 
             async initAudio() {
-                if (this.audioInitialized) return;
-                
-                try {
-                    await Tone.start();
-                    this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
-                    this.synth.volume.value = -10;
-                    
-                    // Set initial transport BPM (will be adjusted by speed control)
-                    Tone.Transport.bpm.value = 120;
-                    
-                    this.audioInitialized = true;
-                    
-                    // Update audio status indicator
-                    document.getElementById('audioStatus').className = 'w-3 h-3 rounded-full bg-green-500';
-                    document.getElementById('audioStatusText').textContent = 'Audio: Ready';
-                    
-                    console.log('Audio initialized successfully');
-                } catch (error) {
-                    console.error('Failed to initialize audio:', error);
-                    
-                    // Update audio status indicator to show error
-                    document.getElementById('audioStatus').className = 'w-3 h-3 rounded-full bg-red-500';
-                    document.getElementById('audioStatusText').textContent = 'Audio: Failed to initialize';
-                }
+                await Tone.start();
+                this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
+                this.synth.volume.value = -10;
             }
 
             setupEventListeners() {
@@ -522,29 +160,6 @@
                 document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
                 
-                // Speed control
-                document.getElementById('speedSlider').addEventListener('input', (e) => {
-                    this.playbackSpeed = parseFloat(e.target.value);
-                    document.getElementById('speedDisplay').textContent = this.playbackSpeed + 'x';
-                    
-                    // Update transport speed if playing
-                    if (this.isPlaying) {
-                        Tone.Transport.bpm.value = 120 * this.playbackSpeed;
-                    }
-                });
-                
-                // Note threshold control
-                document.getElementById('noteSlider').addEventListener('input', (e) => {
-                    this.minTileNote = parseInt(e.target.value);
-                    const noteName = this.midiNoteToName(this.minTileNote);
-                    document.getElementById('noteDisplay').textContent = noteName;
-                    
-                    // Reprocess notes if MIDI is loaded
-                    if (this.midiData) {
-                        this.processNotes();
-                    }
-                });
-                
                 // Lane clicking
                 document.querySelectorAll('.lane').forEach((lane, index) => {
                     lane.addEventListener('click', () => this.hitLane(index));
@@ -552,136 +167,12 @@
                 
                 // Keyboard controls
                 document.addEventListener('keydown', (e) => {
-                    // Handle key binding setup
-                    if (this.waitingForKeyBinding !== null) {
-                        this.setKeyBinding(this.waitingForKeyBinding, e.key.toLowerCase());
-                        return;
-                    }
-                    
                     const key = e.key.toLowerCase();
                     const laneIndex = this.keyboardKeys.indexOf(key);
                     if (laneIndex !== -1) {
                         this.hitLane(laneIndex);
                     }
                 });
-            }
-
-            setupKeyBindings() {
-                // Setup key binding buttons
-                document.querySelectorAll('.key-binding-btn').forEach((btn, index) => {
-                    btn.addEventListener('click', () => {
-                        this.startKeyBinding(index);
-                    });
-                });
-            }
-
-            startKeyBinding(laneIndex) {
-                this.waitingForKeyBinding = laneIndex;
-                const btn = document.getElementById(`keyBtn${laneIndex}`);
-                btn.textContent = '?';
-                btn.style.background = 'linear-gradient(135deg, #fbbf24, #f59e0b)';
-                btn.style.boxShadow = '0 8px 32px rgba(251, 191, 36, 0.4)';
-                
-                document.getElementById('keyBindingStatus').textContent = `Press any key for Lane ${laneIndex + 1}...`;
-                
-                // Auto-cancel after 5 seconds
-                setTimeout(() => {
-                    if (this.waitingForKeyBinding === laneIndex) {
-                        this.cancelKeyBinding(laneIndex);
-                    }
-                }, 5000);
-            }
-
-            setKeyBinding(laneIndex, newKey) {
-                // Check if key is already used by another lane
-                const existingLane = this.keyboardKeys.indexOf(newKey);
-                if (existingLane !== -1 && existingLane !== laneIndex) {
-                    document.getElementById('keyBindingStatus').textContent = `Key "${newKey.toUpperCase()}" is already used by Lane ${existingLane + 1}!`;
-                    this.cancelKeyBinding(laneIndex);
-                    return;
-                }
-                
-                // Update the key binding
-                this.keyboardKeys[laneIndex] = newKey;
-                
-                // Update UI
-                const btn = document.getElementById(`keyBtn${laneIndex}`);
-                const laneKey = document.getElementById(`laneKey${laneIndex}`);
-                const keyDisplay = newKey.toUpperCase();
-                
-                btn.textContent = keyDisplay;
-                laneKey.textContent = keyDisplay;
-                
-                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                btn.style.boxShadow = '0 0 20px rgba(16, 185, 129, 0.6)';
-                
-                document.getElementById('keyBindingStatus').textContent = `Lane ${laneIndex + 1} bound to "${keyDisplay}"`;
-                
-                this.waitingForKeyBinding = null;
-                this.saveKeyBindings(); // Save to localStorage
-                
-                // Reset button styling after 2 seconds
-                setTimeout(() => {
-                    btn.style.background = '';
-                    btn.style.boxShadow = '';
-                    document.getElementById('keyBindingStatus').textContent = '';
-                }, 2000);
-            }
-
-            cancelKeyBinding(laneIndex) {
-                const btn = document.getElementById(`keyBtn${laneIndex}`);
-                btn.textContent = this.keyboardKeys[laneIndex].toUpperCase();
-                btn.style.background = '';
-                btn.style.boxShadow = '';
-                
-                document.getElementById('keyBindingStatus').textContent = '';
-                this.waitingForKeyBinding = null;
-            }
-
-            loadKeyBindings() {
-                const savedBindings = localStorage.getItem('pianoTilesKeyBindings');
-                if (savedBindings) {
-                    try {
-                        const bindings = JSON.parse(savedBindings);
-                        this.keyboardKeys = bindings;
-                        
-                        // Update UI to reflect loaded bindings
-                        this.keyboardKeys.forEach((key, index) => {
-                            const btn = document.getElementById(`keyBtn${index}`);
-                            const laneKey = document.getElementById(`laneKey${index}`);
-                            const keyDisplay = key.toUpperCase();
-                            
-                            btn.textContent = keyDisplay;
-                            laneKey.textContent = keyDisplay;
-                        });
-                    } catch (error) {
-                        console.log('Could not load key bindings from storage');
-                    }
-                }
-            }
-
-            saveKeyBindings() {
-                localStorage.setItem('pianoTilesKeyBindings', JSON.stringify(this.keyboardKeys));
-            }
-
-            midiNoteToName(midiNote) {
-                const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-                const octave = Math.floor(midiNote / 12) - 1;
-                const noteName = noteNames[midiNote % 12];
-                return noteName + octave;
-            }
-
-            midiNameToNumber(noteName) {
-                const noteMap = {
-                    'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E': 4, 'F': 5,
-                    'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
-                };
-                
-                const match = noteName.match(/([A-G][#b]?)(\d+)/);
-                if (!match) return 60; // Default to C4
-                
-                const [, note, octave] = match;
-                return (parseInt(octave) + 1) * 12 + noteMap[note];
             }
 
             async loadMIDI(event) {
@@ -716,58 +207,27 @@
                 
                 this.midiData.tracks.forEach(track => {
                     track.notes.forEach(note => {
-                        const midiNoteNumber = this.midiNameToNumber(note.name);
-                        const shouldShowTile = midiNoteNumber >= this.minTileNote;
-                        
                         this.scheduledNotes.push({
-                            time: note.time / this.playbackSpeed, // Adjust time for speed
+                            time: note.time,
                             note: note.name,
                             velocity: note.velocity,
-                            duration: note.duration / this.playbackSpeed, // Adjust duration for speed
-                            midiNumber: midiNoteNumber,
-                            showTile: shouldShowTile,
-                            lane: shouldShowTile ? Math.floor(Math.random() * this.lanes) : -1 // No lane for background notes
+                            duration: note.duration,
+                            lane: Math.floor(Math.random() * this.lanes) // Random lane assignment
                         });
                     });
                 });
                 
                 // Sort notes by time
                 this.scheduledNotes.sort((a, b) => a.time - b.time);
-                
-                // Update info display
-                const tileNotes = this.scheduledNotes.filter(note => note.showTile);
-                const backgroundNotes = this.scheduledNotes.filter(note => !note.showTile);
-                
-                if (document.getElementById('midiInfo').innerHTML.includes('✅')) {
-                    const existingInfo = document.getElementById('midiInfo').innerHTML;
-                    document.getElementById('midiInfo').innerHTML = existingInfo + `
-                        <div class="mt-2 text-xs">
-                            <div class="text-green-300">Tile Notes: ${tileNotes.length}</div>
-                            <div class="text-blue-300">Background Notes: ${backgroundNotes.length}</div>
-                        </div>
-                    `;
-                }
             }
 
-            async play() {
+            play() {
                 if (!this.midiData) {
                     alert('Please load a MIDI file first!');
                     return;
                 }
                 
-                // Initialize audio on first user interaction
-                await this.initAudio();
-                
-                if (!this.audioInitialized) {
-                    alert('Audio initialization failed. Please try again.');
-                    return;
-                }
-                
                 this.isPlaying = true;
-                
-                // Set transport speed
-                Tone.Transport.bpm.value = 120 * this.playbackSpeed;
-                
                 Tone.Transport.start();
                 this.scheduleNotes();
                 this.updateUI();
@@ -793,93 +253,55 @@
             }
 
             scheduleNotes() {
-                // Don't schedule if audio isn't initialized
-                if (!this.audioInitialized || !this.synth) return;
-                
                 // Clear previous scheduled events
                 Tone.Transport.cancel();
                 
                 this.scheduledNotes.forEach(noteData => {
                     Tone.Transport.schedule((time) => {
-                        // Play background notes immediately (notes below threshold)
-                        if (!noteData.showTile && this.synth) {
-                            this.synth.triggerAttackRelease(noteData.note, noteData.duration, time, noteData.velocity);
-                        }
+                        // Play the note
+                        this.synth.triggerAttackRelease(noteData.note, noteData.duration, time, noteData.velocity);
                         
-                        // Generate a tile for every note above threshold - RANDOM LANE
-                        if (noteData.showTile) {
-                            const lane = Math.floor(Math.random() * this.lanes); // Random lane generation
-                            this.generateTile(lane, noteData.midiNumber);
-                        }
+                        // Generate a tile
+                        this.generateTile(noteData.lane);
                     }, noteData.time);
                 });
             }
 
-            generateTile(lane, midiNoteNumber) {
+            generateTile(lane) {
                 const gameBoard = document.getElementById('gameBoard');
                 const laneWidth = gameBoard.offsetWidth / this.lanes;
                 
-                // Enhanced color system with neon effects
-                const noteHeight = (midiNoteNumber - this.minTileNote) / 24;
-                const hue = Math.max(180, Math.min(300, 180 + noteHeight * 120)); // Cyan to purple spectrum
-                const saturation = 85 + noteHeight * 15;
-                const lightness = 45 + noteHeight * 25;
-                
                 const tile = document.createElement('div');
-                tile.className = 'tile absolute rounded-2xl cursor-pointer';
-                tile.style.width = (laneWidth - 16) + 'px';
-                tile.style.height = '80px'; // Larger tiles for bigger board
-                tile.style.left = (lane * laneWidth + 8) + 'px';
+                tile.className = 'tile absolute bg-gradient-to-b from-purple-500 to-pink-600 rounded-lg border-2 border-white/30 shadow-lg cursor-pointer';
+                tile.style.width = (laneWidth - 10) + 'px';
+                tile.style.height = '60px';
+                tile.style.left = (lane * laneWidth + 5) + 'px';
+                tile.style.top = '-70px';
                 tile.style.zIndex = '10';
-                tile.style.willChange = 'transform'; // Optimize for animations
                 
-                // Create enhanced gradient with glow
-                const gradient = `linear-gradient(135deg, 
-                    hsl(${hue}, ${saturation}%, ${lightness}%) 0%, 
-                    hsl(${hue + 20}, ${saturation - 10}%, ${lightness - 15}%) 50%, 
-                    hsl(${hue - 20}, ${saturation}%, ${lightness - 25}%) 100%)`;
-                tile.style.background = gradient;
-                
-                // Add note name display with enhanced typography
-                const noteName = this.midiNoteToName(midiNoteNumber);
-                tile.innerHTML = `
-                    <div class="w-full h-full rounded-2xl flex items-center justify-center relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/20 rounded-2xl"></div>
-                        <span class="relative text-white text-sm font-bold tracking-wider neon-glow z-10">${noteName}</span>
-                    </div>
-                `;
+                // Add visual effects
+                tile.innerHTML = '<div class="w-full h-full bg-gradient-to-b from-white/20 to-transparent rounded-lg"></div>';
                 
                 const tileData = {
                     element: tile,
                     lane: lane,
-                    y: -100, // Start higher for larger board
-                    hit: false,
-                    midiNote: midiNoteNumber,
-                    velocity: 0.7,
-                    audioPlayed: false
+                    y: -70,
+                    hit: false
                 };
-                
-                // Set initial position using transform
-                tile.style.transform = `translateY(${tileData.y}px)`;
                 
                 this.tiles.push(tileData);
                 gameBoard.appendChild(tile);
                 
-                // Enhanced click handler with animation
+                // Click handler for this tile
                 tile.addEventListener('click', () => this.hitTile(tileData));
             }
 
-            async hitLane(laneIndex) {
-                // Initialize audio on first user interaction if needed
-                if (!this.audioInitialized) {
-                    await this.initAudio();
-                }
-                
+            hitLane(laneIndex) {
                 // Find the bottommost tile in this lane
                 const laneTiles = this.tiles.filter(tile => 
                     tile.lane === laneIndex && 
                     !tile.hit && 
-                    tile.y > 750 && tile.y < 900 // Adjusted for larger hit area
+                    tile.y > 480 && tile.y < 600 // Near the hit area
                 );
                 
                 if (laneTiles.length > 0) {
@@ -900,17 +322,16 @@
                 tileData.hit = true;
                 this.score += 10;
                 
-                // Enhanced visual hit effect
-                tileData.element.classList.add('tile-hit');
-                tileData.element.style.background = 'linear-gradient(135deg, #00ff88, #00cc88)';
-                tileData.element.style.boxShadow = '0 0 30px rgba(0, 255, 136, 0.8)';
+                // Visual hit effect
+                tileData.element.style.backgroundColor = '#10B981';
+                tileData.element.style.transform = 'scale(0.8)';
                 
                 setTimeout(() => {
                     if (tileData.element.parentNode) {
                         tileData.element.remove();
                     }
                     this.tiles = this.tiles.filter(t => t !== tileData);
-                }, 300);
+                }, 200);
                 
                 this.updateUI();
             }
@@ -920,72 +341,41 @@
                 const laneWidth = gameBoard.offsetWidth / this.lanes;
                 
                 const effect = document.createElement('div');
-                effect.className = 'absolute rounded-2xl pointer-events-none';
-                effect.style.width = (laneWidth - 16) + 'px';
-                effect.style.height = '80px'; // Match new tile size
-                effect.style.left = (lane * laneWidth + 8) + 'px';
-                effect.style.bottom = '20px'; // Adjusted for larger board
-                effect.style.background = 'linear-gradient(135deg, #ff4444, #cc0000)';
-                effect.style.boxShadow = '0 0 30px rgba(255, 68, 68, 0.8)';
-                effect.style.animation = 'ping 0.6s ease-out';
+                effect.className = 'absolute bg-red-500/50 rounded-lg pointer-events-none';
+                effect.style.width = (laneWidth - 10) + 'px';
+                effect.style.height = '60px';
+                effect.style.left = (lane * laneWidth + 5) + 'px';
+                effect.style.bottom = '0px';
+                effect.style.animation = 'ping 0.5s ease-out';
                 
                 gameBoard.appendChild(effect);
-                setTimeout(() => effect.remove(), 600);
+                setTimeout(() => effect.remove(), 500);
             }
 
             startGameLoop() {
-                const gameLoop = (currentTime) => {
-                    const deltaTime = currentTime - this.lastUpdateTime;
-                    this.lastUpdateTime = currentTime;
-                    
+                this.gameLoop = setInterval(() => {
                     if (this.isPlaying) {
                         this.currentTime = Tone.Transport.seconds;
                         this.updateProgress();
                     }
                     
-                    this.updateTiles(deltaTime);
+                    this.updateTiles();
                     this.checkMissedTiles();
-                    
-                    requestAnimationFrame(gameLoop);
-                };
-                
-                requestAnimationFrame(gameLoop);
+                }, 16); // ~60 FPS
             }
 
-            updateTiles(deltaTime) {
-                const hitZoneY = 780; // Adjusted for larger game board
-                const hitZoneTolerance = 30; // Tolerance for hitting
-                
-                // Use deltaTime for smoother animation
-                const frameSpeed = Math.min(deltaTime / 16.67, 2); // Cap at 2x normal speed
-                
+            updateTiles() {
                 this.tiles.forEach(tile => {
                     if (!tile.hit) {
-                        // Smooth fall speed based on actual frame time and playback speed
-                        tile.y += this.fallSpeed * this.playbackSpeed * frameSpeed;
-                        tile.element.style.transform = `translateY(${tile.y}px)`; // Use transform for better performance
-                        
-                        // Check if tile has reached the hit zone and play audio
-                        if (!tile.audioPlayed && tile.y >= hitZoneY - hitZoneTolerance && tile.y <= hitZoneY + hitZoneTolerance) {
-                            this.playNoteAtHitZone(tile);
-                            tile.audioPlayed = true;
-                        }
+                        tile.y += this.fallSpeed;
+                        tile.element.style.top = tile.y + 'px';
                     }
                 });
-            }
-            
-            playNoteAtHitZone(tile) {
-                // Only play if audio is initialized
-                if (!this.audioInitialized || !this.synth) return;
-                
-                // Play the note when tile reaches hit zone
-                const noteName = this.getMIDINoteNameFromNumber(tile.midiNote);
-                this.synth.triggerAttackRelease(noteName, "8n", "+0", tile.velocity);
             }
 
             checkMissedTiles() {
                 const missedTiles = this.tiles.filter(tile => 
-                    !tile.hit && tile.y > 900 // Adjusted for larger game board
+                    !tile.hit && tile.y > 600
                 );
                 
                 missedTiles.forEach(tile => {
@@ -1001,14 +391,11 @@
 
             updateProgress() {
                 if (this.totalTime > 0) {
-                    // Adjust total time based on playback speed
-                    const adjustedTotalTime = this.totalTime / this.playbackSpeed;
-                    const progress = (this.currentTime / adjustedTotalTime) * 100;
+                    const progress = (this.currentTime / this.totalTime) * 100;
                     document.getElementById('progressBar').style.width = Math.min(progress, 100) + '%';
                     document.getElementById('currentTime').textContent = this.formatTime(this.currentTime);
-                    document.getElementById('totalTime').textContent = this.formatTime(adjustedTotalTime);
                     
-                    if (this.currentTime >= adjustedTotalTime) {
+                    if (this.currentTime >= this.totalTime) {
                         this.stop();
                     }
                 }
@@ -1034,13 +421,6 @@
                 const mins = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${mins}:${secs.toString().padStart(2, '0')}`;
-            }
-
-            getMIDINoteNameFromNumber(midiNumber) {
-                const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-                const octave = Math.floor(midiNumber / 12) - 1;
-                const noteIndex = midiNumber % 12;
-                return notes[noteIndex] + octave;
             }
         }
 
