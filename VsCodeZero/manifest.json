@@ -1,0 +1,98 @@
+{
+  "name": "VS Code Zero",
+  "short_name": "VSCodeZero",
+  "description": "Complete offline Progressive Web App that replicates VS Code core features using WebAssembly and browser APIs",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#007acc",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["developer-tools", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "resources/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "resources/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "resources/hero-bg.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "VS Code Zero running in browser"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New File",
+      "short_name": "New",
+      "description": "Create a new file",
+      "url": "/?action=new-file",
+      "icons": [
+        {
+          "src": "resources/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Open Terminal",
+      "short_name": "Terminal",
+      "description": "Open integrated terminal",
+      "url": "/?action=terminal",
+      "icons": [
+        {
+          "src": "resources/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 800
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/*": [".txt", ".md", ".js", ".html", ".css", ".json"],
+        "text/cpp": [".cpp", ".c", ".h", ".hpp"],
+        "text/python": [".py"],
+        "text/java": [".java"],
+        "application/json": [".json"]
+      }
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+vscode-zero",
+      "url": "/?url=%s"
+    }
+  ]
+}

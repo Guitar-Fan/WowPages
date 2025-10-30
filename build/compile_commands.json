@@ -1,0 +1,14 @@
+[
+{
+  "directory": "/workspaces/WowPages/build",
+  "command": "/usr/bin/clang++   -g -std=gnu++17 -o CMakeFiles/calculator.dir/calculator.cpp.o -c /workspaces/WowPages/VsCodeZero/sample-projects/calculator.cpp",
+  "file": "/workspaces/WowPages/VsCodeZero/sample-projects/calculator.cpp",
+  "output": "CMakeFiles/calculator.dir/calculator.cpp.o"
+},
+{
+  "directory": "/workspaces/WowPages/build",
+  "command": "/usr/bin/clang++   -g -std=gnu++17 -o CMakeFiles/advanced-cpp-demo.dir/advanced-cpp-demo.cpp.o -c /workspaces/WowPages/VsCodeZero/sample-projects/advanced-cpp-demo.cpp",
+  "file": "/workspaces/WowPages/VsCodeZero/sample-projects/advanced-cpp-demo.cpp",
+  "output": "CMakeFiles/advanced-cpp-demo.dir/advanced-cpp-demo.cpp.o"
+}
+]

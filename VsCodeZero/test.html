@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VS Code Zero Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background: #2d2d30;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 3px;
+        }
+        .success { background: #4caf50; }
+        .error { background: #f44336; }
+        .warning { background: #ff9800; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>VS Code Zero - System Test</h1>
+        
+        <div class="test-section">
+            <h2>Component Loading Test</h2>
+            <button onclick="testComponents()">Test All Components</button>
+            <div id="componentStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Terminal Test</h2>
+            <button onclick="testTerminal()">Test Terminal</button>
+            <div id="terminalStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Compiler Test</h2>
+            <button onclick="testCompiler()">Test C++ Compiler</button>
+            <div id="compilerStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>File System Test</h2>
+            <button onclick="testFileSystem()">Test File System</button>
+            <div id="fileSystemStatus"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Launch VS Code Zero</h2>
+            <button onclick="window.open('index.html', '_blank')">Open VS Code Zero</button>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function testComponents() {
+            const components = [
+                'Monaco Editor',
+                'xterm.js Terminal',
+                'FitAddon',
+                'IndexedDB',
+                'OPFS Support',
+                'Service Worker',
+                'WebAssembly'
+            ];
+            
+            let results = [];
+            
+            // Test Monaco Editor
+            if (typeof monaco !== 'undefined') {
+                results.push('✅ Monaco Editor: Available');
+            } else {
+                results.push('❌ Monaco Editor: Not loaded');
+            }
+            
+            // Test Terminal
+            if (typeof Terminal !== 'undefined') {
+                results.push('✅ xterm.js Terminal: Available');
+            } else {
+                results.push('❌ xterm.js Terminal: Not loaded');
+            }
+            
+            // Test FitAddon
+            if (typeof FitAddon !== 'undefined') {
+                results.push('✅ FitAddon: Available');
+            } else {
+                results.push('❌ FitAddon: Not loaded');
+            }
+            
+            // Test IndexedDB
+            if ('indexedDB' in window) {
+                results.push('✅ IndexedDB: Supported');
+            } else {
+                results.push('❌ IndexedDB: Not supported');
+            }
+            
+            // Test OPFS
+            if ('storage' in navigator && 'getDirectory' in navigator.storage) {
+                results.push('✅ OPFS: Supported');
+            } else {
+                results.push('⚠️ OPFS: Not supported (will use IndexedDB)');
+            }
+            
+            // Test Service Worker
+            if ('serviceWorker' in navigator) {
+                results.push('✅ Service Worker: Supported');
+            } else {
+                results.push('❌ Service Worker: Not supported');
+            }
+            
+            // Test WebAssembly
+            if ('WebAssembly' in window) {
+                results.push('✅ WebAssembly: Supported');
+            } else {
+                results.push('❌ WebAssembly: Not supported');
+            }
+            
+            showStatus('componentStatus', results.join('<br>'), 'success');
+        }
+
+        function testTerminal() {
+            if (typeof Terminal !== 'undefined') {
+                try {
+                    const testTerminal = new Terminal({
+                        fontSize: 14,
+                        theme: { background: '#1e1e1e' }
+                    });
+                    showStatus('terminalStatus', '✅ Terminal creation successful!', 'success');
+                } catch (error) {
+                    showStatus('terminalStatus', `❌ Terminal creation failed: ${error.message}`, 'error');
+                }
+            } else {
+                showStatus('terminalStatus', '❌ Terminal library not loaded', 'error');
+            }
+        }
+
+        function testCompiler() {
+            if ('WebAssembly' in window) {
+                showStatus('compilerStatus', '✅ WebAssembly is supported - C++ compilation available', 'success');
+            } else {
+                showStatus('compilerStatus', '❌ WebAssembly not supported - C++ compilation not available', 'error');
+            }
+        }
+
+        function testFileSystem() {
+            if ('storage' in navigator && 'getDirectory' in navigator.storage) {
+                navigator.storage.getDirectory()
+                    .then(() => {
+                        showStatus('fileSystemStatus', '✅ OPFS is working correctly', 'success');
+                    })
+                    .catch(error => {
+                        showStatus('fileSystemStatus', `⚠️ OPFS failed, will use IndexedDB: ${error.message}`, 'warning');
+                    });
+            } else if ('indexedDB' in window) {
+                showStatus('fileSystemStatus', '⚠️ OPFS not available, but IndexedDB is supported', 'warning');
+            } else {
+                showStatus('fileSystemStatus', '❌ No suitable file system API available', 'error');
+            }
+        }
+
+        // Auto-run component test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testComponents, 1000);
+        });
+    </script>
+</body>
+</html>

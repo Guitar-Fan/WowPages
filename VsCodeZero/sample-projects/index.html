@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VS Code Zero Sample Projects</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .project {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .project h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .project p {
+            color: #666;
+            line-height: 1.6;
+        }
+        .code {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .highlight {
+            background: #e3f2fd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>VS Code Zero Sample Projects</h1>
+    
+    <div class="project">
+        <h2>🧮 C++ Calculator</h2>
+        <p>A simple calculator application written in C++ that demonstrates:</p>
+        <ul>
+            <li>Object-oriented programming with classes</li>
+            <li>Basic arithmetic operations</li>
+            <li>Input/output handling</li>
+            <li>Error handling for division by zero</li>
+        </ul>
+        
+        <div class="code">
+<span class="highlight">#include &lt;iostream&gt;</span>
+<span class="highlight">#include &lt;string&gt;</span>
+
+using namespace std;
+
+class Calculator {
+public:
+    double add(double a, double b) { return a + b; }
+    double subtract(double a, double b) { return a - b; }
+    double multiply(double a, double b) { return a * b; }
+    double divide(double a, double b) { 
+        if (b != 0) return a / b;
+        else {
+            cout &lt;&lt; "Error: Division by zero!" &lt;&lt; endl;
+            return 0;
+        }
+    }
+};
+        </div>
+        
+        <p><strong>Features demonstrated:</strong></p>
+        <ul>
+            <li>✅ C++ syntax highlighting in Monaco Editor</li>
+            <li>✅ IntelliSense and code completion</li>
+            <li>✅ Compilation to WebAssembly</li>
+            <li>✅ Execution in integrated terminal</li>
+            <li>✅ Debugging with breakpoints</li>
+        </ul>
+    </div>
+    
+    <div class="project">
+        <h2>✅ JavaScript Todo App</h2>
+        <p>A modern todo application demonstrating JavaScript ES6+ features:</p>
+        <ul>
+            <li>Class-based object-oriented programming</li>
+            <li>Local storage persistence</li>
+            <li>Array methods and functional programming</li>
+            <li>Modern JavaScript syntax</li>
+        </ul>
+        
+        <div class="code">
+<span class="highlight">class TodoApp {</span>
+    constructor() {
+        this.todos = [];
+        this.nextId = 1;
+        this.loadTodos();
+    }
+    
+    addTodo(text) {
+        const todo = {
+            id: this.nextId++,
+            text: text,
+            completed: false,
+            createdAt: new Date()
+        };
+        
+        this.todos.push(todo);
+        this.saveTodos();
+        return todo;
+    }
+        </div>
+        
+        <p><strong>Features demonstrated:</strong></p>
+        <ul>
+            <li>✅ JavaScript ES6+ syntax highlighting</li>
+            <li>✅ Auto-completion and IntelliSense</li>
+            <li>✅ ESLint integration</li>
+            <li>✅ Code formatting and refactoring</li>
+            <li>✅ Git integration for version control</li>
+        </ul>
+    </div>
+    
+    <div class="project">
+        <h2>🎯 How to Use These Projects</h2>
+        <ol>
+            <li><strong>Open VS Code Zero:</strong> Launch the application in your browser</li>
+            <li><strong>Navigate to Projects:</strong> Use the file explorer to browse sample projects</li>
+            <li><strong>Edit Code:</strong> Modify the source files using the full-featured editor</li>
+            <li><strong>Compile & Run:</strong> For C++ files, use Ctrl+Shift+B to compile and run</li>
+            <li><strong>Git Integration:</strong> Track changes using the Git panel in the sidebar</li>
+            <li><strong>Terminal Access:</strong> Use Ctrl+` to open the integrated terminal</li>
+        </ol>
+    </div>
+    
+    <div class="project">
+        <h2>🔧 Technical Highlights</h2>
+        <ul>
+            <li><strong>WebAssembly Compilation:</strong> C++ code compiles to WASM and runs in the browser</li>
+            <li><strong>Offline Storage:</strong> Files persist using OPFS and IndexedDB</li>
+            <li><strong>Full Git Support:</strong> Complete Git workflow using isomorphic-git</li>
+            <li><strong>Terminal Emulation:</strong> Full xterm.js terminal with PTY support</li>
+            <li><strong>PWA Features:</strong> Installable app that works completely offline</li>
+        </ul>
+    </div>
+</body>
+</html>

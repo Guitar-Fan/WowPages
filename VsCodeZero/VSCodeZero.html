@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VS Code Zero</title>
+    <meta name="description" content="Complete offline Progressive Web App that replicates VS Code core features using WebAssembly and browser APIs">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e1e1e">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="resources/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="resources/icon-512.png">
+    
+    <!-- External Dependencies (will be cached by service worker) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/editor/editor.main.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe WPC', 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+            height: 100vh;
+        }
+        
+        .vscode-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1e1e1e;
+        }
+        
+        /* Title Bar */
+        .title-bar {
+            height: 30px;
+            background: #3c3c3c;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            border-bottom: 1px solid #3e3e3e;
+        }
+        
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Activity Bar */
+        .activity-bar {
+            width: 48px;
+            background: #333333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            border-right: 1px solid #3e3e3e;
+        }
+        
+        .activity-item {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 2px 0;
+            transition: all 0.2s ease;
+        }
+        
+        .activity-item:hover {
+            background: #3e3e3e;
+        }
+        
+        .activity-item.active {
+            background: #007acc;
+        }
+        
+        .activity-item svg {
+            width: 24px;
+            height: 24px;
+            fill: #d4d4d4;
+        }
+        
+        /* Main Content Area */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: #252526;
+            border-right: 1px solid #3e3e3e;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.2s ease;
+        }
+        
+        .sidebar.hidden {
+            width: 0;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 12px 16px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e3e;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .file-explorer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+        
+        .file-item {
+            padding: 4px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            transition: background 0.1s ease;
+        }
+        
+        .file-item:hover {
+            background: #2a2d2e;
+        }
+        
+        .file-item.selected {
+            background: #094771;
+        }
+        
+        .file-item svg {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            fill: #d4d4d4;
+        }
+        
+        /* Editor Area */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e1e;
+        }
+        
+        .editor-tabs {
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e3e;
+            display: flex;
+            min-height: 35px;
+            align-items: center;
+            padding: 0 8px;
+        }
+        
+        .editor-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            margin-right: 4px;
+            background: #3e3e3e;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            transition: all 0.1s ease;
+        }
+        
+        .editor-tab:hover {
+            background: #4e4e4e;
+        }
+        
+        .editor-tab.active {
+            background: #1e1e1e;
+            border-bottom: 2px solid #007acc;
+        }
+        
+        .editor-tab .close-btn {
+            margin-left: 8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .editor-tab .close-btn:hover {
+            background: #e81123;
+            opacity: 1;
+        }
+        
+        .editor-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #monaco-editor {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Terminal */
+        .terminal-container {
+            height: 300px;
+            background: #1e1e1e;
+            border-top: 1px solid #3e3e3e;
+            display: none;
+            flex-direction: column;
+        }
+        
+        .terminal-container.visible {
+            display: flex;
+        }
+        
+        .terminal-header {
+            padding: 8px 16px;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e3e;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .terminal-close {
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .terminal-close:hover {
+            background: #e81123;
+        }
+        
+        #terminal {
+            flex: 1;
+            padding: 8px;
+        }
+        
+        /* Status Bar */
+        .status-bar {
+            height: 22px;
+            background: #007acc;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 12px;
+            color: white;
+            border-top: 1px solid #3e3e3e;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin: 0 8px;
+        }
+        
+        .status-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-logo {
+            width: 100px;
+            height: 100px;
+            background: url('resources/icon-192.png') center/contain no-repeat;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .loading-text {
+            font-size: 18px;
+            color: #d4d4d4;
+            margin-bottom: 8px;
+        }
+        
+        .loading-subtext {
+            font-size: 14px;
+            color: #888;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+            }
+            
+            .activity-bar {
+                width: 40px;
+            }
+            
+            .activity-item {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .activity-item svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+        
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: #2d2d30;
+            border: 1px solid #3e3e3e;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 200px;
+            display: none;
+        }
+        
+        .context-menu.visible {
+            display: block;
+        }
+        
+        .context-menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.1s ease;
+        }
+        
+        .context-menu-item:hover {
+            background: #094771;
+        }
+        
+        .context-menu-separator {
+            height: 1px;
+            background: #3e3e3e;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-logo"></div>
+        <div class="loading-text">VS Code Zero</div>
+        <div class="loading-subtext">Loading offline development environment...</div>
+    </div>
+
+    <!-- Main Application -->
+    <div class="vscode-container">
+        <!-- Title Bar -->
+        <div class="title-bar">
+            <span>VS Code Zero - Offline Development Environment</span>
+        </div>
+        
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Activity Bar -->
+            <div class="activity-bar">
+            <div class="activity-item active" data-view="explorer" title="Explorer">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+            </div>
+            <div class="activity-item" data-view="search" title="Search">
+                <svg viewBox="0 0 24 24">
+                    <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                </svg>
+            </div>
+            <div class="activity-item" data-view="git" title="Source Control">
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+            <div class="activity-item" data-view="terminal" title="Terminal">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 19H4c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h16c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zM6.5 12.5L4 10l2.5-2.5L7.5 8.5 5 11l2.5 2.5-1 1zM18 14h-6v-2h6v2z"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <span id="sidebarTitle">Explorer</span>
+                </div>
+                <div class="file-explorer" id="fileExplorer">
+                    <div class="file-item" data-file="welcome.md">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        Welcome to VS Code Zero
+                    </div>
+                    <div class="file-item" data-file="sample.cpp">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        Sample C++ Program
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor Area -->
+            <div class="editor-area">
+                <div class="editor-tabs" id="editorTabs">
+                    <div class="editor-tab active" data-file="welcome.md">
+                        Welcome
+                        <span class="close-btn" onclick="closeTab('welcome.md')">×</span>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <div id="monaco-editor"></div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- Terminal -->
+        <div class="terminal-container" id="terminalContainer">
+            <div class="terminal-header">
+                <span>Terminal</span>
+                <span class="terminal-close" onclick="toggleTerminal()">×</span>
+            </div>
+            <div id="terminal"></div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span id="currentFile">welcome.md</span>
+            </div>
+            <div class="status-item">
+                <span id="cursorPosition">Ln 1, Col 1</span>
+            </div>
+            <div class="status-item">
+                <span id="fileEncoding">UTF-8</span>
+            </div>
+            <div class="status-item">
+                <span id="languageMode">Markdown</span>
+            </div>
+            <div class="status-item">
+                <span id="gitBranch">main</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="newFile()">New File</div>
+        <div class="context-menu-item" onclick="newFolder()">New Folder</div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="refreshExplorer()">Refresh</div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/isomorphic-git@1.25.6/dist/umd/index.min.js"></script>
+    
+    <script src="main.js"></script>
+    <script src="file-system.js"></script>
+    <script src="terminal.js"></script>
+    <script src="compiler.js"></script>
+    <script src="git-integration.js"></script>
+    
+    <!-- Eruda Console for Debugging -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+</body>
+</html>
