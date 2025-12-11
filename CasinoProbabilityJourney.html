@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Casino Probability Journey</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Spectral:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #040b1f;
+      --panel: rgba(7, 16, 40, 0.82);
+      --accent: #ffb347;
+      --accent-strong: #ff6a00;
+      --text: #f4f6ff;
+      --muted: #94a2c4;
+      --success: #6dffb6;
+      --danger: #ff6b7d;
+      --card: rgba(12, 27, 63, 0.9);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #08163c, #030616 65%);
+      color: var(--text);
+      font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: clamp(1rem, 2vw, 2.5rem);
+    }
+
+    .page-wrap {
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .hero {
+      background: linear-gradient(120deg, rgba(255, 121, 63, 0.25), rgba(17, 153, 142, 0.25));
+      padding: clamp(1rem, 2vw, 2.5rem);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent 60%);
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-family: 'Spectral', serif;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      letter-spacing: 0.04em;
+    }
+
+    .hero p {
+      margin: 0.75rem 0 0;
+      max-width: 60ch;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .game-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 55%) minmax(0, 45%);
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    #phaser-root {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 18px;
+      background: var(--panel);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .ui-panel {
+      background: var(--panel);
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .score-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .stage-list {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .stage-card {
+      min-width: 180px;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 0.9rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+
+    .stage-card h3 {
+      margin: 0.3rem 0 0.25rem;
+      font-size: 1rem;
+    }
+
+    .stage-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .stage-card.active {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+
+    .stage-card.completed {
+      border-color: var(--success);
+    }
+
+    .question-block {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 14px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .question-block h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .question-block p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .question-block form {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      min-width: 140px;
+      padding: 0.7rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    button.submit {
+      background: linear-gradient(120deg, var(--accent), var(--accent-strong));
+      border: none;
+      color: var(--bg);
+      font-weight: 700;
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .feedback {
+      font-weight: 600;
+      min-height: 1.2rem;
+    }
+
+    .math-details {
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 14px;
+      padding: 1rem;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+    }
+
+    .math-details h4 {
+      margin: 0 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .math-details p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    footer {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .game-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .stage-list {
+        flex-wrap: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <header class="hero">
+      <h1>Probability Quest: Casion Run</h1>
+      <p>Every table in this mini casino hides a real-life probability question that gamblers and casino managers genuinely care about. Work through each station, compute the math that drives the decision, and earn virtual chips while a 2D floor plan (powered by Phaser) lights up your journey.</p>
+    </header>
+
+    <main class="content">
+      <section class="game-shell">
+        <div id="phaser-root" aria-label="Casino floor visualization"></div>
+        <aside class="ui-panel">
+          <div class="score-strip">
+            <span>Chips Banked</span>
+            <strong id="chip-count">0</strong>
+          </div>
+
+          <div class="stage-list" data-stage-list></div>
+
+          <article class="question-block">
+            <h2 data-stage-title>Stage</h2>
+            <p class="scenario" data-scenario></p>
+            <p class="question" data-question></p>
+            <form id="answer-form">
+              <input type="text" id="answer-field" placeholder="Decimal or fraction (e.g. 1/6)" autocomplete="off" />
+              <button class="submit" type="submit">Lock Answer</button>
+            </form>
+            <div class="feedback" id="feedback"></div>
+          </article>
+
+          <article class="math-details">
+            <h4>Math in motion</h4>
+            <p data-explanation></p>
+          </article>
+        </aside>
+      </section>
+    </main>
+
+    <footer>
+      Tip: append <strong>?debug=1</strong> to the URL to open the Eruda console on mobile. Answers accept decimals or fractions (e.g. 5/11).
+    </footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjs@13.0.0/lib/browser/math.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('debug') === '1') {
+      eruda.init();
+    }
+
+    const stageData = [
+      {
+        title: 'Entrance Coin Flip',
+        shortLabel: 'Coin Gate',
+        scenario: 'You must win a double-or-nothing warm-up. Two fair coins decide whether the pit boss lets you deeper inside.',
+        question: 'What is the probability of landing HEADS twice in a row with a fair coin? Answer as a decimal.',
+        explanation: 'Two independent flips multiply: P = 0.5 × 0.5 = 0.25 (25%). Casinos rely on such streak odds to price promotions.',
+        answer: 0.25,
+        tolerance: 0.01,
+        reward: 25,
+        color: 0x126782
+      },
+      {
+        title: 'Dice Duel Table',
+        shortLabel: 'Dice Relay',
+        scenario: 'At the dice pit, three dice fly at once. You win the side bet if at least one die shows a 6.',
+        question: 'What is the probability of seeing at least one six when three fair dice roll simultaneously?',
+        explanation: 'Complement rule: first count the chance of zero sixes, (5/6)^3, then subtract from 1. Result ≈ 0.4213 (42.13%).',
+        answer: 1 - Math.pow(5 / 6, 3),
+        tolerance: 0.01,
+        reward: 30,
+        color: 0x184c54
+      },
+      {
+        title: 'Roulette Alley',
+        shortLabel: 'Roulette',
+        scenario: 'The roulette attendant dares you to bet red twice in a row on an American wheel (18 reds, 18 blacks, 2 green zeros).',
+        question: 'What is the probability that both spins land on red back-to-back?',
+        explanation: 'Each spin: 18/38 reds. Independent spins multiply to (18/38)^2 ≈ 0.2245 (22.45%). The zeros drag the odds below 25%.',
+        answer: Math.pow(18 / 38, 2),
+        tolerance: 0.01,
+        reward: 35,
+        color: 0x632b6c
+      },
+      {
+        title: 'Blackjack Risk Lounge',
+        shortLabel: 'BJ Risk',
+        scenario: 'Dealer shows 10 and you sit on 16. If you hit, you bust when drawing 6,7,8,9,10,J,Q,K.',
+        question: 'Assuming each rank is equally likely, what is the probability you bust when hitting on 16?',
+        explanation: 'There are 13 ranks. Eight of them (6 through K) force you over 21. Probability = 8/13 ≈ 0.6154 (61.54%).',
+        answer: 8 / 13,
+        tolerance: 0.01,
+        reward: 30,
+        color: 0x873d24
+      },
+      {
+        title: 'Slots Math Lab',
+        shortLabel: 'Slots EV',
+        scenario: 'A slot costs $2. It pays $10 with probability 0.12, $25 with probability 0.04, and $0 otherwise.',
+        question: 'What is the expected profit per pull (payout minus $2 cost)?',
+        explanation: 'Expected payout = 10(0.12) + 25(0.04) = $2.20. Profit = 2.20 - 2.00 = $0.20. Positive value attracts players.',
+        answer: 0.2,
+        tolerance: 0.02,
+        reward: 40,
+        color: 0xb47912
+      },
+      {
+        title: 'Craps Point Gallery',
+        shortLabel: 'Point 6',
+        scenario: 'In craps, the shooter established point 6. You consider a side bet that pays if 6 appears before a 7.',
+        question: 'What is the probability of rolling a 6 before a 7 once the point is set?',
+        explanation: 'On each roll: 5 ways to make 6, 6 ways to make 7. Probability point hits first = 5 / (5 + 6) = 5/11 ≈ 0.4545.',
+        answer: 5 / 11,
+        tolerance: 0.01,
+        reward: 45,
+        color: 0x2b9348
+      }
+    ];
+
+    const stageListEl = document.querySelector('[data-stage-list]');
+    const stageTitleEl = document.querySelector('[data-stage-title]');
+    const scenarioEl = document.querySelector('[data-scenario]');
+    const questionEl = document.querySelector('[data-question]');
+    const explanationEl = document.querySelector('[data-explanation]');
+    const answerForm = document.getElementById('answer-form');
+    const answerField = document.getElementById('answer-field');
+    const feedbackEl = document.getElementById('feedback');
+    const chipCountEl = document.getElementById('chip-count');
+
+    let currentStage = 0;
+    let chips = 0;
+
+    stageData.forEach((stage, index) => {
+      const card = document.createElement('article');
+      card.className = 'stage-card';
+      card.innerHTML = `
+        <div class="stage-label">Stage ${index + 1}</div>
+        <h3>${stage.title}</h3>
+        <p>${stage.scenario}</p>
+      `;
+      stage.domRef = card;
+      stageListEl.appendChild(card);
+    });
+
+    const gameEvents = new Phaser.Events.EventEmitter();
+
+    class CasinoScene extends Phaser.Scene {
+      constructor() {
+        super({ key: 'CasinoScene' });
+      }
+
+      create() {
+        const width = this.scale.width;
+        const height = this.scale.height;
+
+        this.cameras.main.setBackgroundColor('#020714');
+        const walkway = this.add.rectangle(width / 2, height / 2, width * 0.9, 80, 0x061836, 0.6);
+        walkway.setStrokeStyle(2, 0xffffff, 0.08);
+
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillCircle(6, 6, 6);
+        graphics.generateTexture('spark', 12, 12);
+
+        this.stageNodes = stageData.map((stage, index) => {
+          const x = 120 + index * ((width - 240) / (stageData.length - 1));
+          const y = height / 2 + (index % 2 === 0 ? -90 : 90);
+          const table = this.add.rectangle(x, y, 150, 90, stage.color, 0.8);
+          table.setStrokeStyle(3, 0xffffff, 0.15);
+          const label = this.add.text(x, y - 55, stage.shortLabel, {
+            fontFamily: 'Space Grotesk',
+            fontSize: '16px',
+            color: '#fff',
+            shadow: { offsetX: 0, offsetY: 0, color: '#000', blur: 6 }
+          }).setOrigin(0.5);
+          const odds = this.add.text(x, y + 5, stage.title, {
+            fontFamily: 'Space Grotesk',
+            fontSize: '13px',
+            color: '#e0f2ff'
+          }).setOrigin(0.5);
+          return { x, y, table, label, odds };
+        });
+
+        this.chip = this.add.circle(this.stageNodes[0].x, this.stageNodes[0].y, 16, 0xffb347, 1);
+        this.chip.setStrokeStyle(3, 0xffffff, 0.5);
+        this.tweens.add({
+          targets: this.chip,
+          scale: 1.05,
+          duration: 900,
+          yoyo: true,
+          repeat: -1,
+          ease: 'sine.inOut'
+        });
+
+        gameEvents.on('stage-changed', (index) => {
+          this.stageNodes.forEach((node, idx) => {
+            node.table.setStrokeStyle(3, idx === index ? 0xffb347 : 0xffffff, idx === index ? 0.8 : 0.15);
+            node.label.setAlpha(idx === index ? 1 : 0.5);
+            node.odds.setAlpha(idx === index ? 1 : 0.5);
+          });
+
+          this.tweens.add({
+            targets: this.chip,
+            x: this.stageNodes[index].x,
+            y: this.stageNodes[index].y,
+            duration: 700,
+            ease: 'sine.inOut'
+          });
+        });
+
+        gameEvents.on('celebrate', (index) => {
+          const emitter = this.add.particles('spark').createEmitter({
+            x: this.stageNodes[index].x,
+            y: this.stageNodes[index].y,
+            speed: { min: 80, max: 180 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            blendMode: 'ADD',
+            lifespan: 900,
+            gravityY: 200,
+            quantity: 12
+          });
+
+          this.time.delayedCall(900, () => emitter.stop());
+        });
+
+        gameEvents.emit('stage-changed', 0);
+      }
+    }
+
+    const game = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'phaser-root',
+      width: 960,
+      height: 540,
+      backgroundColor: '#01030b',
+      scene: [CasinoScene]
+    });
+
+    function formatPercent(value) {
+      return (value * 100).toFixed(2) + '%';
+    }
+
+    function updateUI(index) {
+      const stage = stageData[index];
+      stageTitleEl.textContent = `Stage ${index + 1}: ${stage.title}`;
+      scenarioEl.textContent = stage.scenario;
+      questionEl.textContent = stage.question;
+      explanationEl.textContent = stage.explanation;
+      answerField.value = '';
+      feedbackEl.textContent = '';
+      stageData.forEach((stg, idx) => {
+        stg.domRef.classList.toggle('active', idx === index);
+      });
+      gameEvents.emit('stage-changed', index);
+    }
+
+    function markCompleted(index) {
+      stageData[index].domRef.classList.add('completed');
+    }
+
+    function isAnswerCorrect(userValue, stage) {
+      if (typeof userValue !== 'number' || Number.isNaN(userValue)) {
+        return false;
+      }
+      return Math.abs(userValue - stage.answer) <= stage.tolerance;
+    }
+
+    answerForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const raw = answerField.value.trim();
+      if (!raw) {
+        feedbackEl.textContent = 'Type a decimal or fraction first!';
+        feedbackEl.style.color = varColor('--danger');
+        return;
+      }
+
+      let evaluated;
+      try {
+        evaluated = math.evaluate(raw);
+      } catch (err) {
+        feedbackEl.textContent = 'Could not parse that. Try decimals like 0.25 or fractions such as 5/11';
+        feedbackEl.style.color = varColor('--danger');
+        return;
+      }
+
+      const stage = stageData[currentStage];
+      if (isAnswerCorrect(evaluated, stage)) {
+        feedbackEl.textContent = `Correct! +${stage.reward} chips.`;
+        feedbackEl.style.color = varColor('--success');
+        if (!stage.completed) {
+          stage.completed = true;
+          chips += stage.reward;
+          chipCountEl.textContent = chips;
+          markCompleted(currentStage);
+          gameEvents.emit('celebrate', currentStage);
+        }
+
+        if (currentStage < stageData.length - 1) {
+          currentStage += 1;
+          setTimeout(() => updateUI(currentStage), 800);
+        } else {
+          feedbackEl.textContent = `Jackpot! You cleared all math stations with ${chips} chips.`;
+          answerField.disabled = true;
+        }
+      } else {
+        const closeness = Math.abs(evaluated - stage.answer);
+        const hint = closeness < stage.tolerance * 3 ? 'Super close—double-check rounding.' : 'Revisit the explanation panel for clues.';
+        feedbackEl.textContent = `Not quite. ${hint}`;
+        feedbackEl.style.color = varColor('--danger');
+      }
+    });
+
+    function varColor(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name) || '#fff';
+    }
+
+    updateUI(currentStage);
+  </script>
+</body>
+</html>
